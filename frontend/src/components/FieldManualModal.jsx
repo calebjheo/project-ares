@@ -10,7 +10,7 @@ const FieldManualModal = ({ isOpen, onClose }) => {
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}></div>
       
-      <div className="relative w-full max-w-3xl rounded-2xl border border-white/10 bg-[#0a0f1c]/95 shadow-[0_8px_32px_0_rgba(0,0,0,0.8)] backdrop-blur-xl flex flex-col max-h-[90vh] animate-[fadeIn_0.2s_ease-out]">
+      <div className="relative w-full max-w-3xl rounded-2xl border border-white/10 bg-[#0a0f1c]/95 shadow-[0_8px_32px_0_rgba(0,0,0,0.8)] backdrop-blur-xl flex flex-col max-h-[85vh] animate-[fadeIn_0.2s_ease-out]">
         
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-white/10 flex-shrink-0">
@@ -46,7 +46,7 @@ const FieldManualModal = ({ isOpen, onClose }) => {
         </div>
 
         {/* Content Area */}
-        <div className="p-6 overflow-y-auto font-sans">
+        <div className="p-6 overflow-y-auto font-sans no-scrollbar">
           
           {activeTab === 'engine' && (
             <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">

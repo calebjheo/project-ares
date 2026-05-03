@@ -13,21 +13,22 @@ const MethodologyModal = ({ isOpen, onClose }) => {
       ></div>
       
       {/* Modal Content */}
-      <div className="relative w-full max-w-3xl rounded-2xl border border-white/10 bg-[#0a0f1c]/95 shadow-[0_8px_32px_0_rgba(0,0,0,0.8)] backdrop-blur-xl p-8 animate-[fadeIn_0.2s_ease-out]">
+      <div className="relative w-full max-w-3xl rounded-2xl border border-white/10 bg-[#0a0f1c]/95 shadow-[0_8px_32px_0_rgba(0,0,0,0.8)] backdrop-blur-xl flex flex-col max-h-[85vh] animate-[fadeIn_0.2s_ease-out]">
         <button 
           onClick={onClose}
-          className="absolute top-6 right-6 text-gray-400 hover:text-white transition-colors"
+          className="absolute top-6 right-6 text-gray-400 hover:text-white transition-colors z-10"
         >
           <X size={24} />
         </button>
         
-        <div className="flex items-center gap-3 mb-8 border-b border-white/10 pb-4">
-          <BookOpen className="text-blue-500" size={24} />
-          <h2 className="text-white font-sans font-bold tracking-widest uppercase">System Methodology & Mechanism</h2>
-        </div>
-        
-        <div className="space-y-8 text-gray-300 font-sans text-sm leading-relaxed">
-          <p className="text-gray-400 italic">
+        <div className="p-6 sm:p-8 overflow-y-auto font-sans no-scrollbar">
+          <div className="flex items-center gap-3 mb-8 border-b border-white/10 pb-4">
+            <BookOpen className="text-blue-500" size={24} />
+            <h2 className="text-white font-sans font-bold tracking-widest uppercase">System Methodology & Mechanism</h2>
+          </div>
+          
+          <div className="space-y-8 text-gray-300 font-sans text-sm leading-relaxed">
+            <p className="text-gray-400 italic">
             Project ARES utilizes an advanced machine-learning pipeline to synthesize disparate, high-signal market data streams into actionable quantitative risk profiles.
           </p>
 
