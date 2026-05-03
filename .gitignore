@@ -1,0 +1,5 @@
+node_modules/
+.env
+output.txt
+output2.txt
+.DS_Store
