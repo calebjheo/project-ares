@@ -8,7 +8,11 @@ const cors = require('cors');
 async function fetchCryptoData() {
     try {
         // Fetch BTC, ETH, and SOL Price from CoinGecko
-        const priceResponse = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd');
+        const cgConfig = process.env.COINGECKO_API_KEY ? {
+            headers: { 'x-cg-demo-api-key': process.env.COINGECKO_API_KEY }
+        } : {};
+        
+        const priceResponse = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd', cgConfig);
         const btcPrice = priceResponse.data.bitcoin.usd;
         const ethPrice = priceResponse.data.ethereum.usd;
         const solPrice = priceResponse.data.solana.usd;
