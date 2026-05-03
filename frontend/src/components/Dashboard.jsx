@@ -27,7 +27,7 @@ const Dashboard = () => {
 
     const fetchRiskData = async () => {
       try {
-        const response = await fetch('http://localhost:3001/api/risk');
+        const response = await fetch('https://ares-backend-fwr0.onrender.com/api/risk');
         if (!response.ok) {
           throw new Error('Failed to fetch risk data');
         }
