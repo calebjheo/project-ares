@@ -5,56 +5,55 @@ const MethodologyModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      ></div>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={onClose}>
       
-      {/* Modal Content */}
-      <div className="relative w-full max-w-3xl rounded-2xl border border-white/10 bg-[#0a0f1c]/95 shadow-[0_8px_32px_0_rgba(0,0,0,0.8)] backdrop-blur-xl flex flex-col max-h-[85vh] animate-[fadeIn_0.2s_ease-out]">
-        <button 
-          onClick={onClose}
-          className="absolute top-6 right-6 text-gray-400 hover:text-white transition-colors z-10"
-        >
-          <X size={24} />
-        </button>
-        
-        <div className="p-6 sm:p-8 overflow-y-auto font-sans no-scrollbar">
-          <div className="flex items-center gap-3 mb-8 border-b border-white/10 pb-4">
+      {/* Modal Content Box */}
+      <div 
+        className="relative w-full max-w-3xl max-h-[80vh] flex flex-col bg-slate-900 rounded-xl overflow-hidden border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.8)] animate-[fadeIn_0.2s_ease-out]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header (Fixed at top) */}
+        <div className="flex items-center justify-between p-6 border-b border-white/10 bg-slate-900 z-10 flex-shrink-0">
+          <div className="flex items-center gap-3">
             <BookOpen className="text-blue-500" size={24} />
-            <h2 className="text-white font-sans font-bold tracking-widest uppercase">System Methodology & Mechanism</h2>
+            <h2 className="text-white font-sans font-bold tracking-widest uppercase">System Methodology</h2>
           </div>
-          
+          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
+            <X size={24} />
+          </button>
+        </div>
+        
+        {/* Scrollable Content Area */}
+        <div className="flex-1 overflow-y-auto p-6 no-scrollbar">
           <div className="space-y-8 text-gray-300 font-sans text-sm leading-relaxed">
             <p className="text-gray-400 italic">
-            Project ARES utilizes an advanced machine-learning pipeline to synthesize disparate, high-signal market data streams into actionable quantitative risk profiles.
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="flex flex-col items-center text-center p-6 rounded-xl bg-white/5 border border-white/5">
-              <BarChart className="text-blue-400 mb-4" size={28} />
-              <h3 className="font-semibold text-gray-200 mb-2">1. Institutional Flows</h3>
-              <p className="text-xs text-gray-400">Tracks Spot ETF inflows and outflows to gauge raw institutional demand and macroeconomic positioning.</p>
-            </div>
-            <div className="flex flex-col items-center text-center p-6 rounded-xl bg-white/5 border border-white/5">
-              <Layers className="text-red-400 mb-4" size={28} />
-              <h3 className="font-semibold text-gray-200 mb-2">2. Liquidation Clusters</h3>
-              <p className="text-xs text-gray-400">Ingests Coinglass Heatmap data to identify overleveraged zones where forced liquidations act as magnetic price targets.</p>
-            </div>
-            <div className="flex flex-col items-center text-center p-6 rounded-xl bg-white/5 border border-white/5">
-              <Activity className="text-yellow-400 mb-4" size={28} />
-              <h3 className="font-semibold text-gray-200 mb-2">3. Retail Sentiment</h3>
-              <p className="text-xs text-gray-400">Monitors Fear & Greed indices and broader social sentiment to determine when the retail market is acting as exit liquidity.</p>
-            </div>
-          </div>
-          
-          <div className="bg-blue-500/10 border border-blue-500/20 p-5 rounded-xl">
-            <h4 className="font-semibold text-blue-400 mb-2 tracking-wider uppercase text-xs">The Synthesis Engine</h4>
-            <p className="text-gray-300">
-              The AI ingests these 3 pillars to calculate the definitive <strong>Market Posture</strong> (ranging from Aggressive to Danger) and pinpoint exact <strong>Kill Zone targets</strong>. Trade the math, not the emotion.
+              Project ARES utilizes an advanced machine-learning pipeline to synthesize disparate, high-signal market data streams into actionable quantitative risk profiles.
             </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="flex flex-col items-center text-center p-6 rounded-xl bg-white/5 border border-white/5">
+                <BarChart className="text-blue-400 mb-4" size={28} />
+                <h3 className="font-semibold text-gray-200 mb-2">1. Institutional Flows</h3>
+                <p className="text-xs text-gray-400">Tracks Spot ETF inflows and outflows to gauge raw institutional demand and macroeconomic positioning.</p>
+              </div>
+              <div className="flex flex-col items-center text-center p-6 rounded-xl bg-white/5 border border-white/5">
+                <Layers className="text-red-400 mb-4" size={28} />
+                <h3 className="font-semibold text-gray-200 mb-2">2. Liquidation Clusters</h3>
+                <p className="text-xs text-gray-400">Ingests Coinglass Heatmap data to identify overleveraged zones where forced liquidations act as magnetic price targets.</p>
+              </div>
+              <div className="flex flex-col items-center text-center p-6 rounded-xl bg-white/5 border border-white/5">
+                <Activity className="text-yellow-400 mb-4" size={28} />
+                <h3 className="font-semibold text-gray-200 mb-2">3. Retail Sentiment</h3>
+                <p className="text-xs text-gray-400">Monitors Fear & Greed indices and broader social sentiment to determine when the retail market is acting as exit liquidity.</p>
+              </div>
+            </div>
+            
+            <div className="bg-blue-500/10 border border-blue-500/20 p-5 rounded-xl">
+              <h4 className="font-semibold text-blue-400 mb-2 tracking-wider uppercase text-xs">The Synthesis Engine</h4>
+              <p className="text-gray-300">
+                The AI ingests these 3 pillars to calculate the definitive <strong>Market Posture</strong> (ranging from Aggressive to Danger) and pinpoint exact <strong>Kill Zone targets</strong>. Trade the math, not the emotion.
+              </p>
+            </div>
           </div>
         </div>
       </div>

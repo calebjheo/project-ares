@@ -7,13 +7,15 @@ const FieldManualModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}></div>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={onClose}>
       
-      <div className="relative w-full max-w-3xl rounded-2xl border border-white/10 bg-[#0a0f1c]/95 shadow-[0_8px_32px_0_rgba(0,0,0,0.8)] backdrop-blur-xl flex flex-col max-h-[85vh] animate-[fadeIn_0.2s_ease-out]">
-        
+      {/* Modal Content Box */}
+      <div 
+        className="relative w-full max-w-3xl max-h-[80vh] flex flex-col bg-slate-900 rounded-xl overflow-hidden border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.8)] animate-[fadeIn_0.2s_ease-out]"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-white/10 flex-shrink-0">
+        <div className="flex items-center justify-between p-6 border-b border-white/10 bg-slate-900 z-10 flex-shrink-0">
           <div className="flex items-center gap-3">
             <BookOpen className="text-blue-500" size={24} />
             <h2 className="text-white font-sans font-bold tracking-widest uppercase">Field Manual</h2>
@@ -23,8 +25,8 @@ const FieldManualModal = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        {/* Tabs Navigation */}
-        <div className="flex px-6 border-b border-white/5 overflow-x-auto no-scrollbar flex-shrink-0">
+        {/* Tabs Navigation (Also fixed) */}
+        <div className="flex px-6 border-b border-white/5 bg-slate-900 overflow-x-auto no-scrollbar flex-shrink-0 z-10">
           <button 
             onClick={() => setActiveTab('engine')}
             className={`px-4 py-4 text-xs font-semibold tracking-widest uppercase border-b-2 transition-colors whitespace-nowrap ${activeTab === 'engine' ? 'border-blue-500 text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
@@ -45,8 +47,8 @@ const FieldManualModal = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        {/* Content Area */}
-        <div className="p-6 overflow-y-auto font-sans no-scrollbar">
+        {/* Scrollable Content Area */}
+        <div className="flex-1 overflow-y-auto p-6 font-sans no-scrollbar">
           
           {activeTab === 'engine' && (
             <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
