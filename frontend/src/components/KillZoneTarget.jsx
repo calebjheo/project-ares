@@ -55,39 +55,37 @@ const KillZoneTarget = ({ btcTarget, ethTarget, solTarget, isProUser, onUpgradeC
             </div>
           </div>
         </div>
-
-        {/* Freemium Paywall Overlay */}
-        {!isProUser && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center z-20">
-            <div className="bg-[#0a0f1c]/80 backdrop-blur-sm border border-white/10 p-6 md:p-8 rounded-xl flex flex-col items-center text-center shadow-2xl">
-              <Lock className="text-yellow-500 mb-3" size={32} />
-              <h3 className="text-white font-sans font-bold tracking-widest uppercase mb-1">Encrypted Data</h3>
-              <p className="text-gray-400 text-xs mb-5">Precision liquidity targets are restricted.</p>
-              
-              <div className="text-left bg-white/5 border border-white/5 rounded-lg p-4 mb-6 w-full max-w-[280px]">
-                <p className="text-gray-300 font-sans font-semibold text-[10px] uppercase tracking-widest mb-3">Unlock Pro Access:</p>
-                <ul className="text-gray-400 text-xs font-sans space-y-2">
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-400 mt-0.5">✓</span> Live BTC, ETH, & SOL Kill Zones
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-400 mt-0.5">✓</span> Institutional Divergence Alerts
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-400 mt-0.5">✓</span> Custom Altcoin Radar <span className="text-[9px] text-yellow-500/70 ml-1">(In Dev)</span>
-                  </li>
-                </ul>
-              </div>
-
-              <a 
-                href="https://buy.stripe.com/6oU6oI2zzfdX6eTao67ok01"
-                className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold uppercase tracking-widest text-[10px] sm:text-xs px-6 py-2.5 sm:py-3 rounded-full transition-colors shadow-[0_0_15px_rgba(234,179,8,0.3)] w-full">
-                Upgrade to Pro - $29/mo
-              </a>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Freemium Paywall Overlay - Moved to Outermost Container */}
+      {!isProUser && (
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center backdrop-blur-md bg-slate-900/60">
+          <Lock className="text-yellow-500 mb-3" size={32} />
+          <h3 className="text-white font-sans font-bold tracking-widest uppercase mb-1">Encrypted Data</h3>
+          <p className="text-gray-400 text-xs mb-5">Precision liquidity targets are restricted.</p>
+          
+          <div className="text-left bg-white/5 border border-white/5 rounded-lg p-4 mb-2 w-full max-w-[280px]">
+            <p className="text-gray-300 font-sans font-semibold text-[10px] uppercase tracking-widest mb-3">Unlock Pro Access:</p>
+            <ul className="text-gray-400 text-xs font-sans space-y-2">
+              <li className="flex items-start gap-2">
+                <span className="text-green-400 mt-0.5">✓</span> Live BTC, ETH, & SOL Kill Zones
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-400 mt-0.5">✓</span> Institutional Divergence Alerts
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-400 mt-0.5">✓</span> Custom Altcoin Radar <span className="text-[9px] text-yellow-500/70 ml-1">(In Dev)</span>
+              </li>
+            </ul>
+          </div>
+
+          <a 
+            href="https://buy.stripe.com/6oU6oI2zzfdX6eTao67ok01"
+            className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-lg mt-4 shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-colors text-xs sm:text-sm tracking-widest uppercase">
+            UPGRADE TO PRO - $29/MO
+          </a>
+        </div>
+      )}
     </div>
   );
 };
