@@ -24,7 +24,7 @@ const AltcoinSlot = ({ id, isProUser }) => {
     setStatus('loading');
     
     try {
-      const response = await fetch(`https://ares-backend-fwr0.onrender.com/api/altcoin?ticker=${cleanTicker}`);
+      const response = await fetch(`http://localhost:3001/api/altcoin?ticker=${cleanTicker}`);
       if (!response.ok) throw new Error('Fetch failed');
       const json = await response.json();
       const targetKey = `${cleanTicker}_Kill_Zone`;
@@ -121,7 +121,7 @@ const Dashboard = () => {
 
     const fetchRiskData = async () => {
       try {
-        const response = await fetch('https://ares-backend-fwr0.onrender.com/api/risk');
+        const response = await fetch('http://localhost:3001/api/risk');
         if (!response.ok) {
           throw new Error('Failed to fetch risk data');
         }
