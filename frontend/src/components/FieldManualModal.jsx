@@ -139,8 +139,22 @@ const FieldManualModal = ({ isOpen, onClose }) => {
                 <h3 className="font-bold tracking-widest uppercase">BEGINNER GUIDE</h3>
               </div>
               <p className="text-gray-300 text-sm leading-relaxed">
-                Welcome to Project ARES. This is not a casino; this is a risk engine. 1. Check the Posture Shield to see what institutions are doing. 2. Look at the Kill Zones. These are where over-leveraged retail traders will be liquidated. 3. Never market-buy. Set limit orders at the Kill Zones to buy the panic.
+                Welcome to Project ARES. You are no longer gambling; you are executing quantitative risk management.
               </p>
+              <div className="space-y-4">
+                <p className="text-gray-300 text-sm leading-relaxed">
+                  <strong className="text-green-400">Step 1: Read the Posture Shield.</strong> This is your macro radar. If it is Green (Aggressive), institutions are buying, and it is safer to deploy capital. If it is Red (Danger), institutions are selling, and a flash crash is mathematically probable.
+                </p>
+                <p className="text-gray-300 text-sm leading-relaxed">
+                  <strong className="text-green-400">Step 2: Identify the Kill Zones.</strong> The prices you see on the dashboard are not random. They are exact coordinates pulled from Coinglass Liquidation Heatmaps. These are the prices where over-leveraged retail traders will be force-liquidated by their exchanges.
+                </p>
+                <p className="text-gray-300 text-sm leading-relaxed">
+                  <strong className="text-green-400">Step 3: Set the Trap.</strong> NEVER use a 'Market Buy' order. Open your exchange (e.g., Kraken, Coinbase Advanced) and create a 'Limit Buy' order at the exact Kill Zone price.
+                </p>
+                <p className="text-gray-300 text-sm leading-relaxed">
+                  <strong className="text-green-400">Step 4: Wait in the Dark.</strong> Let the market makers crash the price to hunt the retail leverage. Your limit order will catch the falling knife at a massive discount. When the liquidations finish, the price will bounce. You just bought the absolute bottom.
+                </p>
+              </div>
             </div>
           )}
 
@@ -150,14 +164,20 @@ const FieldManualModal = ({ isOpen, onClose }) => {
                 <Layers size={24} />
                 <h3 className="font-bold tracking-widest uppercase">USE CASES</h3>
               </div>
-              <p className="text-gray-300 text-sm leading-relaxed bg-white/5 border border-white/5 p-4 rounded-xl">
-                <strong className="text-white block mb-1 text-xs tracking-widest uppercase">USE CASE 1 (The Flash Crash)</strong>
-                Market drops 10% overnight. Your limit order at the Kill Zone fills while you sleep. You wake up in profit.
-              </p>
-              <p className="text-gray-300 text-sm leading-relaxed bg-white/5 border border-white/5 p-4 rounded-xl">
-                <strong className="text-white block mb-1 text-xs tracking-widest uppercase">USE CASE 2 (The Anchor)</strong>
-                Posture Shield is Green. You safely deploy long-term capital knowing institutions are building a floor.
-              </p>
+              <div className="bg-white/5 border border-white/5 p-5 rounded-xl space-y-3">
+                <strong className="text-purple-400 block text-xs tracking-widest uppercase">USE CASE 1: The Flash Crash (Volatility Harvesting)</strong>
+                <p className="text-gray-300 text-sm leading-relaxed">
+                  <span className="text-gray-400 block mb-1">Scenario: Bitcoin is trading at $78,000. The ARES Kill Zone is $74,800.</span>
+                  Execution: You set a Limit Buy for BTC at $74,800 before you go to sleep. Overnight, bad macro news hits. The market makers flush the price to $74,500 to liquidate retail longs. Your order fills perfectly. By morning, the panic subsides, and BTC bounces back to $77,000. You wake up in profit without ever staring at a chart.
+                </p>
+              </div>
+              <div className="bg-white/5 border border-white/5 p-5 rounded-xl space-y-3">
+                <strong className="text-purple-400 block text-xs tracking-widest uppercase">USE CASE 2: The Institutional Anchor (Core Accumulation)</strong>
+                <p className="text-gray-300 text-sm leading-relaxed">
+                  <span className="text-gray-400 block mb-1">Scenario: The Posture Shield is Green, and ETF inflows are surging (+$300M).</span>
+                  Execution: You know Wall Street is building a concrete floor under the market. You safely deploy your long-term capital (Dollar-Cost Averaging) into BTC and ETH, knowing that institutional demand will absorb any short-term retail panic.
+                </p>
+              </div>
             </div>
           )}
 
