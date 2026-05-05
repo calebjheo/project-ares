@@ -131,6 +131,7 @@ const DashboardContent = () => {
     setLastSweep(`${formattedDate} | ${formattedTime}`);
 
     const fetchRiskData = async () => {
+      setLoading(true);
       try {
         const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
         const response = await fetch(`${baseUrl}/api/risk?lang=${language}`);
@@ -149,7 +150,7 @@ const DashboardContent = () => {
     };
 
     fetchRiskData();
-  }, []);
+  }, [language]);
 
   return (
     <div className="min-h-screen flex flex-col relative pb-20 md:pb-24">
