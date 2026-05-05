@@ -20,9 +20,9 @@ const KillZoneTarget = ({ btcTarget, ethTarget, solTarget, isProUser, onUpgradeC
       <div className="flex items-center gap-3 mb-5 md:mb-6 text-red-400 relative z-10">
         <Target size={20} strokeWidth={1.5} />
         <h2 className="font-sans font-semibold text-xs tracking-[0.2em] uppercase">Kill Zone Targets</h2>
-        <div className="relative group flex items-center cursor-help">
+        <div className="relative group/tooltip flex items-center cursor-help">
           <span className="text-red-500/50 hover:text-red-400 transition-colors bg-red-500/10 rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-bold">?</span>
-          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-slate-800 border border-white/10 text-gray-200 text-[10px] font-sans rounded shadow-xl opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity pointer-events-none z-[999] text-left leading-relaxed">
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-slate-800 border border-white/10 text-gray-200 text-[10px] font-sans rounded shadow-xl opacity-0 group-hover/tooltip:opacity-100 group-active/tooltip:opacity-100 transition-opacity pointer-events-none z-[999] text-left leading-relaxed">
             <strong className="block text-white mb-1">What it is:</strong> Algorithmic liquidation clusters where market makers hunt over-leveraged traders.
             <strong className="block text-white mt-2 mb-1">How to use:</strong> NEVER market-buy. Place Limit Buy orders exactly at these prices to catch flash crashes at a massive discount.
           </div>
@@ -79,7 +79,7 @@ const KillZoneTarget = ({ btcTarget, ethTarget, solTarget, isProUser, onUpgradeC
                 <span className="text-green-400 mt-0.5">✓</span> Institutional Divergence Alerts
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-green-400 mt-0.5">✓</span> Custom Altcoin Radar <span className="text-[9px] text-yellow-500/70 ml-1">(In Dev)</span>
+                <span className="text-green-400 mt-0.5">✓</span> Custom Altcoin Radar
               </li>
             </ul>
           </div>
