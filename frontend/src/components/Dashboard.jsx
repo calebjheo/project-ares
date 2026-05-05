@@ -188,9 +188,14 @@ const Dashboard = () => {
 
                 {/* Custom Altcoin Radar Teaser */}
                 <div className="relative rounded-2xl border border-white/10 bg-slate-900/40 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] backdrop-blur-md p-6 overflow-hidden">
-                  <div className="flex items-center gap-3 mb-6 text-purple-400 relative z-10">
-                    <Target size={20} strokeWidth={1.5} />
-                    <h2 className="font-sans font-semibold text-xs tracking-[0.2em] uppercase">Custom Altcoin Radar</h2>
+                  <div className="flex items-start justify-between mb-6 relative z-10">
+                    <div className="flex items-center gap-3 text-purple-400">
+                      <Target size={20} strokeWidth={1.5} />
+                      <h2 className="font-sans font-semibold text-xs tracking-[0.2em] uppercase">Custom Altcoin Radar</h2>
+                    </div>
+                    <div className="bg-purple-500/10 border border-purple-500/30 px-2 py-1 rounded text-[9px] font-sans font-bold text-purple-400 tracking-widest uppercase shadow-[0_0_10px_rgba(168,85,247,0.2)] animate-pulse">
+                      In Development
+                    </div>
                   </div>
                   
                   <div className={`grid grid-cols-1 sm:grid-cols-3 gap-4 transition-all duration-300 ${!isProUser ? 'blur-md select-none opacity-50' : ''}`}>
@@ -198,7 +203,7 @@ const Dashboard = () => {
                       <div key={i} className="flex flex-col items-center justify-center p-4 border border-white/5 rounded-xl bg-white/5">
                         <div className="text-gray-500 text-[10px] uppercase tracking-widest mb-2">Slot {i}</div>
                         {isProUser ? (
-                          <div className="font-sans text-sm text-gray-400 hover:text-white cursor-pointer transition-colors">Select Asset +</div>
+                          <div className="font-sans text-sm text-gray-500 opacity-50 cursor-not-allowed">Select Asset +</div>
                         ) : (
                           <div className="font-mono text-xl font-bold text-white tracking-tight">---</div>
                         )}
