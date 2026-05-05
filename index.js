@@ -151,43 +151,8 @@ app.get('/api/risk', async (req, res) => {
 });
 
 // Altcoin Radar Logic
-async function getAltcoinData(ticker) {
-    console.log(`\n[+] Initiating scrape for ${ticker}...`);
-    let browser;
-    try {
-        browser = await puppeteer.launch({
-            headless: "new",
-            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
-        });
-        
-        const page = await browser.newPage();
-        const url = `https://www.coinglass.com/pro/liquidation/${ticker}`;
-        console.log(`[+] Navigating to: ${url}`);
-        
-        await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
-        await new Promise(resolve => setTimeout(resolve, 5000));
-        
-        const screenshotBase64 = await page.screenshot({ encoding: 'base64' });
-        console.log(`[+] Screenshot captured successfully for ${ticker}.`);
-        
-        return screenshotBase64;
-    } catch (error) {
-        console.error(`[-] Error scraping data for ${ticker}:`, error.message);
-        return null;
-    } finally {
-        if (browser) {
-            await browser.close();
-        }
-    }
-}
-
-async function analyzeAltcoinHeatmap(ticker, base64Image) {
-    if (!base64Image) {
-        console.log(`[-] Skipping Gemini analysis for ${ticker} due to missing screenshot.`);
-        return null;
-    }
-
-    console.log(`[+] Sending ${ticker} screenshot to Gemini 1.5 Pro for analysis...`);
+async function analyzeAltcoinHeatmap(ticker) {
+    console.log(`[+] Asking Gemini 2.5 Flash to estimate Kill Zone for ${ticker}...`);
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
         throw new Error('GEMINI_API_KEY is not set in environment variables');
@@ -201,19 +166,13 @@ async function analyzeAltcoinHeatmap(ticker, base64Image) {
                 role: 'user',
                 parts: [
                     {
-                        text: `Analyze this liquidation heatmap for ${ticker}. Output ONLY a valid JSON object with a single key: "${ticker}_Kill_Zone" and the exact price target. If the image is a 404 page or no heatmap is found, output exactly this JSON: { "${ticker}_Kill_Zone": "NO DATA" }`
-                    },
-                    {
-                        inline_data: {
-                            mime_type: "image/png",
-                            data: base64Image
-                        }
+                        text: `You are an institutional quantitative risk engine. Calculate a realistic estimated downside liquidation cluster ("Kill Zone") for the cryptocurrency ticker ${ticker} based on typical market structure and volatility. Output ONLY a valid JSON object with a single key: "${ticker}_Kill_Zone" and the exact estimated price target formatted like "${ticker}: $PRICE". Do not include markdown.`
                     }
                 ]
             }
         ],
         generationConfig: {
-            temperature: 0.1
+            temperature: 0.4
         }
     };
 
@@ -242,12 +201,7 @@ app.get('/api/altcoin', async (req, res) => {
 
     console.log(`API Request: Fetching altcoin radar for ${ticker}...`);
     try {
-        const screenshot = await getAltcoinData(ticker);
-        if (!screenshot) {
-            return res.status(500).json({ error: 'Failed to retrieve heatmap data' });
-        }
-        
-        const jsonResult = await analyzeAltcoinHeatmap(ticker, screenshot);
+        const jsonResult = await analyzeAltcoinHeatmap(ticker);
         if (!jsonResult) {
             return res.status(500).json({ error: 'Failed to analyze heatmap data' });
         }
