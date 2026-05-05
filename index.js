@@ -201,7 +201,7 @@ async function analyzeAltcoinHeatmap(ticker, base64Image) {
                 role: 'user',
                 parts: [
                     {
-                        text: `Analyze this liquidation heatmap for ${ticker}. Output ONLY a valid JSON object with a single key: "${ticker}_Kill_Zone" and the exact price target.`
+                        text: `Analyze this liquidation heatmap for ${ticker}. Output ONLY a valid JSON object with a single key: "${ticker}_Kill_Zone" and the exact price target. If the image is a 404 page or no heatmap is found, output exactly this JSON: { "${ticker}_Kill_Zone": "NO DATA" }`
                     },
                     {
                         inline_data: {

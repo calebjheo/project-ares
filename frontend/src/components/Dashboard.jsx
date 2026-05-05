@@ -83,7 +83,9 @@ const AltcoinSlot = ({ id, isProUser }) => {
       ) : (
         <div 
           onClick={() => { setStatus('input'); setInputValue(''); }}
-          className="font-mono text-xl font-bold text-white tracking-tight shadow-purple-500/20 drop-shadow-[0_0_15px_rgba(168,85,247,0.4)] cursor-pointer hover:opacity-80 transition-opacity">
+          className={`font-mono font-bold text-white tracking-tight shadow-purple-500/20 drop-shadow-[0_0_15px_rgba(168,85,247,0.4)] cursor-pointer hover:opacity-80 transition-opacity w-full text-center px-2 line-clamp-3 overflow-hidden text-ellipsis ${target.length > 20 ? 'text-[10px] leading-tight' : 'text-xl'}`}
+          title={target}
+        >
           {target}
         </div>
       )}
