@@ -63,11 +63,11 @@ const KillZoneTarget = ({ btcTarget, ethTarget, solTarget, isProUser, onUpgradeC
               <Lock className="text-yellow-500 mb-3" size={32} />
               <h3 className="text-white font-sans font-bold tracking-widest uppercase mb-1">Encrypted Data</h3>
               <p className="text-gray-400 text-xs mb-4">Precision liquidity targets are restricted.</p>
-              <button 
-                onClick={onUpgradeClick}
+              <a 
+                href="https://buy.stripe.com/6oU6oI2zzfdX6eTao67ok01"
                 className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold uppercase tracking-widest text-[10px] sm:text-xs px-4 sm:px-6 py-2 sm:py-3 rounded-full transition-colors shadow-[0_0_15px_rgba(234,179,8,0.3)]">
                 Upgrade to Pro - $29/mo
-              </button>
+              </a>
             </div>
           </div>
         )}

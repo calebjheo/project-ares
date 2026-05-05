@@ -15,8 +15,24 @@ const Dashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isMethodologyOpen, setIsMethodologyOpen] = useState(false);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
-  const [isProUser, setIsProUser] = useState(false);
+  const [isProUser, setIsProUser] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('ares_pro_status') === 'active';
+    }
+    return false;
+  });
   const [lastSweep, setLastSweep] = useState('');
+
+  useEffect(() => {
+    // MVP Auth Logic: Check URL for success parameter from Stripe
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('success') === 'true') {
+      localStorage.setItem('ares_pro_status', 'active');
+      setIsProUser(true);
+      // Clean URL silently
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, []);
 
   useEffect(() => {
     // Set initial last sweep time
@@ -47,21 +63,6 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen flex flex-col relative pb-20 md:pb-24">
-      {/* Dev Toggle Top Bar */}
-      <div className="w-full bg-blue-900/20 border-b border-blue-500/20 py-2 px-4 flex justify-center items-center gap-4 z-50">
-        <button 
-          onClick={() => setIsProUser(false)}
-          className={`text-[10px] sm:text-xs font-sans tracking-widest uppercase px-3 py-1 rounded transition-colors ${!isProUser ? 'bg-blue-500/30 text-white' : 'text-gray-500 hover:text-gray-300'}`}
-        >
-          Free User
-        </button>
-        <button 
-          onClick={() => setIsProUser(true)}
-          className={`text-[10px] sm:text-xs font-sans tracking-widest uppercase px-3 py-1 rounded transition-colors ${isProUser ? 'bg-blue-500/30 text-white' : 'text-gray-500 hover:text-gray-300'}`}
-        >
-          Pro User
-        </button>
-      </div>
 
       {/* Header Wrapper */}
       <header className="w-full max-w-7xl mx-auto px-6 py-8 md:py-12">
