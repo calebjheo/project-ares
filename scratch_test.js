@@ -1,23 +1,26 @@
+require('dotenv').config({ path: 'c:\\Users\\Admin\\OneDrive\\Desktop\\Caleb\\Project ARES\\.env' });
 const axios = require('axios');
 
-async function testGemini() {
-    const apiKey = 'AIzaSyBzl873sSHaWL5tLTPkolaleRL-qUbLFhM';
+async function testGeminiSuccess() {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+        console.error("NO API KEY FOUND IN .ENV");
+        return;
+    }
     console.log("Using API Key:", apiKey.substring(0, 10) + "...");
     
-    // Testing gemini-1.5-flash
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
     
     const requestBody = {
-        contents: [{ role: 'user', parts: [{ text: "Respond with exactly one word: YES" }] }]
+        contents: [{ role: 'user', parts: [{ text: "Respond with exactly one word: SECURE" }] }]
     };
 
     try {
         const response = await axios.post(apiUrl, requestBody, { headers: { 'Content-Type': 'application/json' } });
-        console.log("SUCCESS:", response.data);
+        console.log("SUCCESS:", JSON.stringify(response.data, null, 2));
     } catch (error) {
-        console.error("ERROR STATUS:", error.response ? error.response.status : error.message);
-        console.error("ERROR DATA:", error.response ? error.response.data : error.message);
+        console.error("ERROR:", JSON.stringify(error.response ? error.response.data : error.message, null, 2));
     }
 }
 
-testGemini();
+testGeminiSuccess();
