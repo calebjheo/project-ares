@@ -63,19 +63,17 @@ const AltcoinSlot = ({ id, isProUser }) => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center py-4 px-2 border border-white/5 rounded-xl bg-white/5 min-h-[6rem] h-auto relative group">
-      <div className="text-gray-500 text-[10px] uppercase tracking-widest mb-2 flex items-center justify-center gap-1">
-        {t('slot')} {id} 
+    <div className="flex flex-col items-center justify-center py-4 px-2 border border-white/5 rounded-xl bg-white/5 min-h-[6rem] h-full relative group">
+      <div className="text-gray-500 text-[9px] sm:text-[10px] uppercase tracking-widest mb-2 flex flex-wrap items-center justify-center gap-x-1 gap-y-0.5 whitespace-nowrap">
+        <span>{t('slot')} {id}</span>
         {ticker && status === 'complete' && (
-          <>
+          <div className="flex items-center justify-center">
             <span className="mx-1">-</span>
-            <div className="flex items-center justify-center">
-              <span className={`font-bold flex items-center gap-1 ${threatStyle}`}>
-                {targetData.threatLevel && <ShieldAlert size={10} strokeWidth={2.5} />}
-                {ticker}
-              </span>
-            </div>
-          </>
+            <span className={`font-bold flex items-center gap-1 ${threatStyle}`}>
+              {targetData.threatLevel && <ShieldAlert size={10} strokeWidth={2.5} />}
+              {ticker}
+            </span>
+          </div>
         )}
       </div>
       
@@ -105,11 +103,11 @@ const AltcoinSlot = ({ id, isProUser }) => {
       ) : (
         <div 
           onClick={() => { setStatus('input'); setInputValue(''); }}
-          className="flex flex-col items-center justify-center cursor-pointer hover:opacity-80 transition-opacity w-full"
+          className="flex flex-col items-center justify-center cursor-pointer hover:opacity-80 transition-opacity w-full mt-auto"
         >
           {targetData.threatLevel && (
-            <div className="flex items-center justify-center">
-              <div className={`text-[9px] uppercase tracking-[0.2em] mb-1 font-bold ${threatStyle} opacity-80`}>
+            <div className="flex items-center justify-center whitespace-nowrap">
+              <div className={`text-[8px] sm:text-[9px] uppercase tracking-[0.15em] mb-1 font-bold ${threatStyle} opacity-80`}>
                 {targetData.threatLevel} RISK
               </div>
             </div>
@@ -359,26 +357,27 @@ const DashboardContent = () => {
                     </div>
                   </div>
                   
-                  <div className={`flex flex-col md:flex-row gap-4 transition-all duration-300 ${!isProUser ? 'blur-md select-none opacity-50' : ''}`}>
-                    <div className="flex-grow grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className={`flex flex-col gap-4 transition-all duration-300 ${!isProUser ? 'blur-md select-none opacity-50' : ''}`}>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
                       {[1, 2, 3].map(i => (
                         <AltcoinSlot key={i} id={i} isProUser={isProUser} />
                       ))}
                     </div>
-                    {/* Consolidated Threat Level Key */}
-                    <div className="w-full md:w-48 shrink-0 flex flex-col justify-center gap-2.5 p-4 bg-slate-800/50 rounded-xl border border-white/5">
-                      <div className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-1">{t('threatKey') || 'THREAT KEY'}</div>
-                      <div className="flex items-start gap-2">
-                         <ShieldAlert size={14} className="text-red-500 mt-0.5 shrink-0" />
-                         <div className="text-[10px] text-gray-400 leading-tight"><span className="text-red-500 font-bold">HIGH:</span> Flash crash imminent. Wait for flush.</div>
+                    {/* Consolidated Threat Level Key (Compact Bottom Bar) */}
+                    <div className="w-full flex flex-wrap items-center justify-center gap-x-4 gap-y-2 p-2 bg-slate-800/30 rounded-lg border border-white/5">
+                      <div className="flex items-center gap-1.5">
+                         <ShieldAlert size={12} className="text-red-500 shrink-0" />
+                         <div className="text-[8px] md:text-[9px] text-gray-400 leading-none whitespace-nowrap"><span className="text-red-500 font-bold">HIGH:</span> Flash crash imminent.</div>
                       </div>
-                      <div className="flex items-start gap-2">
-                         <ShieldAlert size={14} className="text-amber-500 mt-0.5 shrink-0" />
-                         <div className="text-[10px] text-gray-400 leading-tight"><span className="text-amber-500 font-bold">ELEVATED:</span> Chop probable. Let MMs sweep liquidity.</div>
+                      <div className="hidden sm:block w-px h-3 bg-white/10"></div>
+                      <div className="flex items-center gap-1.5">
+                         <ShieldAlert size={12} className="text-amber-500 shrink-0" />
+                         <div className="text-[8px] md:text-[9px] text-gray-400 leading-none whitespace-nowrap"><span className="text-amber-500 font-bold">ELEVATED:</span> Chop probable.</div>
                       </div>
-                      <div className="flex items-start gap-2">
-                         <ShieldAlert size={14} className="text-green-500 mt-0.5 shrink-0" />
-                         <div className="text-[10px] text-gray-400 leading-tight"><span className="text-green-500 font-bold">STABLE:</span> Flushed. Safe to accumulate at target.</div>
+                      <div className="hidden sm:block w-px h-3 bg-white/10"></div>
+                      <div className="flex items-center gap-1.5">
+                         <ShieldAlert size={12} className="text-green-500 shrink-0" />
+                         <div className="text-[8px] md:text-[9px] text-gray-400 leading-none whitespace-nowrap"><span className="text-green-500 font-bold">STABLE:</span> Safe to accumulate.</div>
                       </div>
                     </div>
                   </div>
