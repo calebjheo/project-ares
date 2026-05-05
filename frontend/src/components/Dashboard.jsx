@@ -338,38 +338,7 @@ const DashboardContent = () => {
                   onUpgradeClick={() => setIsUpgradeModalOpen(true)}
                 />
 
-                {/* Dedicated Upgrade Banner */}
-                {!isProUser && (
-                  <div className="w-full bg-blue-600/20 border border-blue-500/50 p-4 rounded-xl flex flex-col sm:flex-row justify-between items-center gap-4">
-                    <div className="flex flex-col gap-2 w-full sm:w-auto pr-0 sm:pr-4">
-                      <div className="text-white font-sans text-xs sm:text-sm md:text-base">
-                        {t('unlockInstitutional')}
-                      </div>
-                      <label className="flex items-center gap-2 cursor-pointer mt-1">
-                        <input 
-                          type="checkbox" 
-                          checked={agreedToTos} 
-                          onChange={(e) => setAgreedToTos(e.target.checked)}
-                          className="w-3.5 h-3.5 rounded border-blue-500/50 bg-slate-900/50 text-blue-600 focus:ring-blue-500/50 focus:ring-offset-0 cursor-pointer"
-                        />
-                        <span className="text-gray-400 text-[9px] md:text-[10px] font-sans uppercase tracking-wider select-none">
-                          I agree to the <button onClick={(e) => { e.preventDefault(); setIsTermsOpen(true); }} className="text-blue-400 hover:underline">{t('termsOfService')}</button> & understand this is "As-Is" data.
-                        </span>
-                      </label>
-                    </div>
-                    <a 
-                      href={agreedToTos ? "https://buy.stripe.com/6oU6oI2zzfdX6eTao67ok01" : "#"}
-                      onClick={(e) => {
-                        if (!agreedToTos) {
-                          e.preventDefault();
-                          alert("You must agree to the Terms of Service to upgrade.");
-                        }
-                      }}
-                      className={`font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-lg shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all duration-300 text-[10px] sm:text-xs tracking-widest uppercase whitespace-nowrap ${agreedToTos ? 'bg-blue-600 hover:bg-blue-500 text-white cursor-pointer' : 'bg-slate-700/50 text-gray-500 cursor-not-allowed border border-gray-600/30'}`}>
-                      {t('upgradeToPro')}
-                    </a>
-                  </div>
-                )}
+
 
                 {/* Custom Altcoin Radar Teaser */}
                 <div className="relative rounded-2xl border border-white/10 bg-slate-900/40 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] backdrop-blur-md p-6 overflow-hidden">
