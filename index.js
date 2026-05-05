@@ -73,6 +73,8 @@ IMPORTANT: The 'Actionable_Intel' field MUST be written in the ${lang} language.
 Here is the EXACT JSON format you must follow:\n` +
                               `{\n` +
                               `"Market_Posture": "DEFENSIVE",\n` +
+                              `"Fear_Greed_Score": "78",\n` +
+                              `"Net_ETF_Flow": "+$285M",\n` +
                               `"Actionable_Intel": "[Translate this intel into ${lang}]: BTC ETFs saw $335M inflows led by BlackRock, while ETH ETFs saw $50M outflows. Retail sentiment is euphoric at 78. Prepare for a liquidity flush.",\n` +
                               `"BTC_Kill_Zone": "BTC: $74,800",\n` +
                               `"ETH_Kill_Zone": "ETH: $2,150",\n` +

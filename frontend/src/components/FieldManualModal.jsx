@@ -47,6 +47,18 @@ const FieldManualModal = ({ isOpen, onClose }) => {
           >
             {t('fmTabRules')}
           </button>
+          <button 
+            onClick={() => setActiveTab('beginner')}
+            className={`px-4 py-4 text-xs font-semibold tracking-widest uppercase border-b-2 transition-colors whitespace-nowrap ${activeTab === 'beginner' ? 'border-green-500 text-green-400' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
+          >
+            BEGINNER GUIDE
+          </button>
+          <button 
+            onClick={() => setActiveTab('usecases')}
+            className={`px-4 py-4 text-xs font-semibold tracking-widest uppercase border-b-2 transition-colors whitespace-nowrap ${activeTab === 'usecases' ? 'border-purple-500 text-purple-400' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
+          >
+            USE CASES
+          </button>
         </div>
 
         {/* Scrollable Content Area */}
@@ -117,6 +129,35 @@ const FieldManualModal = ({ isOpen, onClose }) => {
                   <p className="text-sm text-gray-400 leading-relaxed">{t('fmRule3Desc')}</p>
                 </div>
               </div>
+            </div>
+          )}
+
+          {activeTab === 'beginner' && (
+            <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
+              <div className="flex items-center gap-3 text-green-400 mb-4">
+                <BookOpen size={24} />
+                <h3 className="font-bold tracking-widest uppercase">BEGINNER GUIDE</h3>
+              </div>
+              <p className="text-gray-300 text-sm leading-relaxed">
+                Welcome to Project ARES. This is not a casino; this is a risk engine. 1. Check the Posture Shield to see what institutions are doing. 2. Look at the Kill Zones. These are where over-leveraged retail traders will be liquidated. 3. Never market-buy. Set limit orders at the Kill Zones to buy the panic.
+              </p>
+            </div>
+          )}
+
+          {activeTab === 'usecases' && (
+            <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
+              <div className="flex items-center gap-3 text-purple-400 mb-4">
+                <Layers size={24} />
+                <h3 className="font-bold tracking-widest uppercase">USE CASES</h3>
+              </div>
+              <p className="text-gray-300 text-sm leading-relaxed bg-white/5 border border-white/5 p-4 rounded-xl">
+                <strong className="text-white block mb-1 text-xs tracking-widest uppercase">USE CASE 1 (The Flash Crash)</strong>
+                Market drops 10% overnight. Your limit order at the Kill Zone fills while you sleep. You wake up in profit.
+              </p>
+              <p className="text-gray-300 text-sm leading-relaxed bg-white/5 border border-white/5 p-4 rounded-xl">
+                <strong className="text-white block mb-1 text-xs tracking-widest uppercase">USE CASE 2 (The Anchor)</strong>
+                Posture Shield is Green. You safely deploy long-term capital knowing institutions are building a floor.
+              </p>
             </div>
           )}
 
