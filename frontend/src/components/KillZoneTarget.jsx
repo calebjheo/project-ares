@@ -84,11 +84,6 @@ const KillZoneTarget = ({ btcTarget, ethTarget, solTarget, isProUser, onUpgradeC
             </ul>
           </div>
 
-          <a 
-            href="https://buy.stripe.com/6oU6oI2zzfdX6eTao67ok01"
-            className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-lg mt-4 shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-colors text-xs sm:text-sm tracking-widest uppercase">
-            UPGRADE TO PRO - $29/MO
-          </a>
         </div>
       )}
     </div>

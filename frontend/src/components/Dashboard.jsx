@@ -24,7 +24,7 @@ const AltcoinSlot = ({ id, isProUser }) => {
     setStatus('loading');
     
     try {
-      const response = await fetch(`http://localhost:3001/api/altcoin?ticker=${cleanTicker}`);
+      const response = await fetch(`https://ares-backend-fwr0.onrender.com/api/altcoin?ticker=${cleanTicker}`);
       if (!response.ok) throw new Error('Fetch failed');
       const json = await response.json();
       const targetKey = `${cleanTicker}_Kill_Zone`;
@@ -121,7 +121,7 @@ const Dashboard = () => {
 
     const fetchRiskData = async () => {
       try {
-        const response = await fetch('http://localhost:3001/api/risk');
+        const response = await fetch('https://ares-backend-fwr0.onrender.com/api/risk');
         if (!response.ok) {
           throw new Error('Failed to fetch risk data');
         }
@@ -263,6 +263,20 @@ const Dashboard = () => {
                   isProUser={isProUser}
                   onUpgradeClick={() => setIsUpgradeModalOpen(true)}
                 />
+
+                {/* Dedicated Upgrade Banner */}
+                {!isProUser && (
+                  <div className="w-full bg-blue-600/20 border border-blue-500/50 p-4 rounded-xl mt-6 flex justify-between items-center">
+                    <div className="text-white font-sans text-xs sm:text-sm md:text-base pr-4">
+                      Unlock Institutional Flow Data & Custom Altcoin Radar
+                    </div>
+                    <a 
+                      href="https://buy.stripe.com/6oU6oI2zzfdX6eTao67ok01"
+                      className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-lg shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-colors text-[10px] sm:text-xs tracking-widest uppercase whitespace-nowrap">
+                      UPGRADE TO PRO - $29/MO
+                    </a>
+                  </div>
+                )}
 
                 {/* Custom Altcoin Radar Teaser */}
                 <div className="relative rounded-2xl border border-white/10 bg-slate-900/40 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] backdrop-blur-md p-6 overflow-hidden">
