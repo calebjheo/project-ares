@@ -51,13 +51,13 @@ const FieldManualModal = ({ isOpen, onClose }) => {
             onClick={() => setActiveTab('beginner')}
             className={`px-4 py-4 text-xs font-semibold tracking-widest uppercase border-b-2 transition-colors whitespace-nowrap ${activeTab === 'beginner' ? 'border-green-500 text-green-400' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
           >
-            BEGINNER GUIDE
+            {t('fmTabBeginner')}
           </button>
           <button 
             onClick={() => setActiveTab('usecases')}
             className={`px-4 py-4 text-xs font-semibold tracking-widest uppercase border-b-2 transition-colors whitespace-nowrap ${activeTab === 'usecases' ? 'border-purple-500 text-purple-400' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
           >
-            USE CASES
+            {t('fmTabUsecases')}
           </button>
         </div>
 
@@ -136,23 +136,23 @@ const FieldManualModal = ({ isOpen, onClose }) => {
             <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
               <div className="flex items-center gap-3 text-green-400 mb-4">
                 <BookOpen size={24} />
-                <h3 className="font-bold tracking-widest uppercase">BEGINNER GUIDE</h3>
+                <h3 className="font-bold tracking-widest uppercase">{t('fmTabBeginner')}</h3>
               </div>
               <p className="text-gray-300 text-sm leading-relaxed">
-                Welcome to Project ARES. You are no longer gambling; you are executing quantitative risk management.
+                {t('fmBeginnerIntro')}
               </p>
               <div className="space-y-4">
                 <p className="text-gray-300 text-sm leading-relaxed">
-                  <strong className="text-green-400">Step 1: Read the Posture Shield.</strong> This is your macro radar. If it is Green (Aggressive), institutions are buying, and it is safer to deploy capital. If it is Red (Danger), institutions are selling, and a flash crash is mathematically probable.
+                  <strong className="text-green-400">{t('fmBeginnerStep1Title')}</strong> {t('fmBeginnerStep1Desc')}
                 </p>
                 <p className="text-gray-300 text-sm leading-relaxed">
-                  <strong className="text-green-400">Step 2: Identify the Kill Zones.</strong> The prices you see on the dashboard are not random. They are exact coordinates pulled from Coinglass Liquidation Heatmaps. These are the prices where over-leveraged retail traders will be force-liquidated by their exchanges.
+                  <strong className="text-green-400">{t('fmBeginnerStep2Title')}</strong> {t('fmBeginnerStep2Desc')}
                 </p>
                 <p className="text-gray-300 text-sm leading-relaxed">
-                  <strong className="text-green-400">Step 3: Set the Trap.</strong> NEVER use a 'Market Buy' order. Open your exchange (e.g., Kraken, Coinbase Advanced) and create a 'Limit Buy' order at the exact Kill Zone price.
+                  <strong className="text-green-400">{t('fmBeginnerStep3Title')}</strong> {t('fmBeginnerStep3Desc')}
                 </p>
                 <p className="text-gray-300 text-sm leading-relaxed">
-                  <strong className="text-green-400">Step 4: Wait in the Dark.</strong> Let the market makers crash the price to hunt the retail leverage. Your limit order will catch the falling knife at a massive discount. When the liquidations finish, the price will bounce. You just bought the absolute bottom.
+                  <strong className="text-green-400">{t('fmBeginnerStep4Title')}</strong> {t('fmBeginnerStep4Desc')}
                 </p>
               </div>
             </div>
@@ -162,20 +162,20 @@ const FieldManualModal = ({ isOpen, onClose }) => {
             <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
               <div className="flex items-center gap-3 text-purple-400 mb-4">
                 <Layers size={24} />
-                <h3 className="font-bold tracking-widest uppercase">USE CASES</h3>
+                <h3 className="font-bold tracking-widest uppercase">{t('fmTabUsecases')}</h3>
               </div>
               <div className="bg-white/5 border border-white/5 p-5 rounded-xl space-y-3">
-                <strong className="text-purple-400 block text-xs tracking-widest uppercase">USE CASE 1: The Flash Crash (Volatility Harvesting)</strong>
+                <strong className="text-purple-400 block text-xs tracking-widest uppercase">{t('fmUc1Title')}</strong>
                 <p className="text-gray-300 text-sm leading-relaxed">
-                  <span className="text-gray-400 block mb-1">Scenario: Bitcoin is trading at $78,000. The ARES Kill Zone is $74,800.</span>
-                  Execution: You set a Limit Buy for BTC at $74,800 before you go to sleep. Overnight, bad macro news hits. The market makers flush the price to $74,500 to liquidate retail longs. Your order fills perfectly. By morning, the panic subsides, and BTC bounces back to $77,000. You wake up in profit without ever staring at a chart.
+                  <span className="text-gray-400 block mb-1">{t('fmUc1Scenario')}</span>
+                  {t('fmUc1Execution')}
                 </p>
               </div>
               <div className="bg-white/5 border border-white/5 p-5 rounded-xl space-y-3">
-                <strong className="text-purple-400 block text-xs tracking-widest uppercase">USE CASE 2: The Institutional Anchor (Core Accumulation)</strong>
+                <strong className="text-purple-400 block text-xs tracking-widest uppercase">{t('fmUc2Title')}</strong>
                 <p className="text-gray-300 text-sm leading-relaxed">
-                  <span className="text-gray-400 block mb-1">Scenario: The Posture Shield is Green, and ETF inflows are surging (+$300M).</span>
-                  Execution: You know Wall Street is building a concrete floor under the market. You safely deploy your long-term capital (Dollar-Cost Averaging) into BTC and ETH, knowing that institutional demand will absorb any short-term retail panic.
+                  <span className="text-gray-400 block mb-1">{t('fmUc2Scenario')}</span>
+                  {t('fmUc2Execution')}
                 </p>
               </div>
             </div>

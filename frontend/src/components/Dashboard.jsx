@@ -121,16 +121,16 @@ const AltcoinSlot = ({ id, isProUser }) => {
   );
 };
 
-const LiveMetricsHUD = ({ fearGreed, etfFlow }) => (
+const LiveMetricsHUD = ({ fearGreed, etfFlow, t }) => (
   <div className="flex flex-row gap-4 w-full">
     <div className="flex-1 bg-slate-900/60 border border-white/10 rounded-2xl p-4 md:p-6 flex flex-col justify-center items-center backdrop-blur-md shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] relative overflow-hidden group">
       <div className="absolute inset-0 bg-gradient-to-t from-red-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-      <div className="text-[9px] md:text-[10px] text-gray-500 tracking-widest uppercase mb-2 font-bold z-10">Fear & Greed</div>
+      <div className="text-[9px] md:text-[10px] text-gray-500 tracking-widest uppercase mb-2 font-bold z-10">{t('fearGreedTitle')}</div>
       <div className="font-mono text-2xl md:text-3xl font-bold text-white tracking-tight drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] z-10">{fearGreed || '--'}</div>
     </div>
     <div className="flex-1 bg-slate-900/60 border border-white/10 rounded-2xl p-4 md:p-6 flex flex-col justify-center items-center backdrop-blur-md shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] relative overflow-hidden group">
       <div className="absolute inset-0 bg-gradient-to-t from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-      <div className="text-[9px] md:text-[10px] text-gray-500 tracking-widest uppercase mb-2 font-bold z-10">Net ETF Flow</div>
+      <div className="text-[9px] md:text-[10px] text-gray-500 tracking-widest uppercase mb-2 font-bold z-10">{t('netEtfFlowTitle')}</div>
       <div className="font-mono text-2xl md:text-3xl font-bold text-blue-400 tracking-tight drop-shadow-[0_0_15px_rgba(59,130,246,0.4)] z-10">{etfFlow || '--'}</div>
     </div>
   </div>
@@ -321,7 +321,7 @@ const DashboardContent = () => {
 
               {/* Stacked Intel and Kill Zone */}
               <div className="lg:col-span-7 flex flex-col gap-4 xl:gap-6">
-                <LiveMetricsHUD fearGreed={data?.Fear_Greed_Score} etfFlow={data?.Net_ETF_Flow} />
+                <LiveMetricsHUD fearGreed={data?.Fear_Greed_Score} etfFlow={data?.Net_ETF_Flow} t={t} />
                 <ActionableIntel intel={data?.Actionable_Intel} />
                 <KillZoneTarget 
                   btcTarget={data?.BTC_Kill_Zone} 
@@ -383,17 +383,17 @@ const DashboardContent = () => {
                     <div className="w-full flex flex-wrap items-center justify-center gap-x-4 gap-y-2 p-2 bg-slate-800/30 rounded-lg border border-white/5">
                       <div className="flex items-center gap-1.5">
                          <ShieldAlert size={12} className="text-red-500 shrink-0" />
-                         <div className="text-[8px] md:text-[9px] text-gray-400 leading-none whitespace-nowrap"><span className="text-red-500 font-bold">HIGH:</span> Flash crash imminent.</div>
+                         <div className="text-[8px] md:text-[9px] text-gray-400 leading-none whitespace-nowrap"><span className="text-red-500 font-bold">{t('threatHighLabel')}:</span> {t('threatHighDesc')}</div>
                       </div>
                       <div className="hidden sm:block w-px h-3 bg-white/10"></div>
                       <div className="flex items-center gap-1.5">
                          <ShieldAlert size={12} className="text-amber-500 shrink-0" />
-                         <div className="text-[8px] md:text-[9px] text-gray-400 leading-none whitespace-nowrap"><span className="text-amber-500 font-bold">ELEVATED:</span> Chop probable.</div>
+                         <div className="text-[8px] md:text-[9px] text-gray-400 leading-none whitespace-nowrap"><span className="text-amber-500 font-bold">{t('threatElevatedLabel')}:</span> {t('threatElevatedDesc')}</div>
                       </div>
                       <div className="hidden sm:block w-px h-3 bg-white/10"></div>
                       <div className="flex items-center gap-1.5">
                          <ShieldAlert size={12} className="text-green-500 shrink-0" />
-                         <div className="text-[8px] md:text-[9px] text-gray-400 leading-none whitespace-nowrap"><span className="text-green-500 font-bold">STABLE:</span> Safe to accumulate.</div>
+                         <div className="text-[8px] md:text-[9px] text-gray-400 leading-none whitespace-nowrap"><span className="text-green-500 font-bold">{t('threatStableLabel')}:</span> {t('threatStableDesc')}</div>
                       </div>
                     </div>
                   </div>
