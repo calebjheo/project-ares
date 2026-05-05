@@ -122,11 +122,11 @@ const Dashboard = () => {
       </header>
 
       {/* Main Dashboard Area */}
-      <main className="flex-grow w-full max-w-7xl mx-auto px-6 pb-12 flex flex-col xl:flex-row gap-8">
+      <main className="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 pb-8 md:pb-12 flex flex-col xl:flex-row gap-4 xl:gap-8">
         
         {/* Info Panel */}
-        <aside className="w-full xl:w-64 flex-shrink-0">
-          <div className="rounded-2xl border border-white/10 bg-slate-900/40 p-6 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] backdrop-blur-md h-full">
+        <aside className="w-full xl:w-64 flex-shrink-0 order-last xl:order-first">
+          <div className="rounded-2xl border border-white/10 bg-slate-900/40 p-5 md:p-6 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] backdrop-blur-md h-full">
             <div className="flex items-center gap-2 mb-6 text-blue-400">
               <Info size={18} />
               <h3 className="font-sans font-semibold text-xs tracking-[0.2em] uppercase">System Protocol</h3>
@@ -145,7 +145,7 @@ const Dashboard = () => {
         </aside>
 
         {/* Dashboard Grid */}
-        <div className="flex-grow">
+        <div className="flex-grow order-first xl:order-last">
           {loading ? (
             <div className="flex flex-col items-center justify-center h-[500px] rounded-2xl border border-blue-500/20 bg-blue-900/10 backdrop-blur-md relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-t from-blue-500/5 to-transparent"></div>
@@ -168,14 +168,14 @@ const Dashboard = () => {
               <div className="font-sans text-sm text-gray-400">{error}</div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-auto items-stretch">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 xl:gap-6 h-auto items-stretch">
               {/* Posture Shield */}
               <div className="lg:col-span-5 flex">
                 <PostureShield posture={data?.Market_Posture} />
               </div>
 
               {/* Stacked Intel and Kill Zone */}
-              <div className="lg:col-span-7 flex flex-col gap-6">
+              <div className="lg:col-span-7 flex flex-col gap-4 xl:gap-6">
                 <ActionableIntel intel={data?.Actionable_Intel} />
                 <KillZoneTarget 
                   btcTarget={data?.BTC_Kill_Zone} 

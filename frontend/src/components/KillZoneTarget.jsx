@@ -3,7 +3,7 @@ import { Target, Lock } from 'lucide-react';
 
 const KillZoneTarget = ({ btcTarget, ethTarget, solTarget, isProUser, onUpgradeClick }) => {
   return (
-    <div className="flex flex-col items-center justify-center p-6 sm:p-8 h-auto rounded-2xl border border-white/10 bg-slate-900/40 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] backdrop-blur-md relative overflow-hidden group">
+    <div className="flex flex-col items-center justify-center p-5 md:p-8 h-auto rounded-2xl border border-white/10 bg-slate-900/40 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] backdrop-blur-md relative overflow-hidden group">
       {/* Glassmorphism gradient reflection */}
       <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
 
@@ -13,9 +13,15 @@ const KillZoneTarget = ({ btcTarget, ethTarget, solTarget, isProUser, onUpgradeC
       <div className="absolute bottom-4 left-4 w-6 h-6 border-b border-l border-red-500/40 rounded-bl-lg"></div>
       <div className="absolute bottom-4 right-4 w-6 h-6 border-b border-r border-red-500/40 rounded-br-lg"></div>
       
-      <div className="flex items-center gap-3 mb-6 text-red-400 relative z-10">
+      <div className="flex items-center gap-3 mb-5 md:mb-6 text-red-400 relative z-10">
         <Target size={20} strokeWidth={1.5} />
         <h2 className="font-sans font-semibold text-xs tracking-[0.2em] uppercase">Kill Zone Targets</h2>
+        <div className="relative group flex items-center cursor-help">
+          <span className="text-red-500/50 hover:text-red-400 transition-colors bg-red-500/10 rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-bold">?</span>
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2 bg-slate-800 border border-white/10 text-gray-200 text-[10px] font-sans rounded shadow-xl opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity pointer-events-none z-50 text-center leading-relaxed">
+            High-probability magnetic price points where over-leveraged traders will be forcefully liquidated.
+          </div>
+        </div>
       </div>
       
       <div className="relative w-full z-10">

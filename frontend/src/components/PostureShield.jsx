@@ -40,7 +40,7 @@ const PostureShield = ({ posture }) => {
   const isDanger = posture?.toLowerCase() === 'danger' || posture?.toLowerCase() === 'defensive';
 
   return (
-    <div className={`relative flex flex-col items-center justify-center py-16 px-10 h-auto w-full rounded-2xl border ${borderColor} ${bgColor} ${shadow} backdrop-blur-md transition-all duration-700 overflow-hidden`}>
+    <div className={`relative flex flex-col items-center justify-center py-10 md:py-16 px-6 md:px-10 h-auto w-full rounded-2xl border ${borderColor} ${bgColor} ${shadow} backdrop-blur-md transition-all duration-700 overflow-hidden`}>
       {/* Subtle background glow effect behind the icon */}
       <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full ${bgColor} blur-3xl opacity-50`}></div>
       
