@@ -9,8 +9,9 @@ const ActionableIntel = ({ intel }) => {
         <h2 className="text-gray-300 font-sans font-semibold text-xs tracking-[0.2em] uppercase">Actionable Intel</h2>
         <div className="relative group flex items-center cursor-help">
           <span className="text-blue-500/50 hover:text-blue-400 transition-colors bg-blue-500/10 rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-bold">?</span>
-          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-800 border border-white/10 text-gray-200 text-[10px] font-sans rounded shadow-xl opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity pointer-events-none z-50 text-center leading-relaxed">
-            AI-synthesized narrative explaining the math behind the Posture Shield.
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-slate-800 border border-white/10 text-gray-200 text-[10px] font-sans rounded shadow-xl opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity pointer-events-none z-50 text-left leading-relaxed">
+            <strong className="block text-white mb-1">What it is:</strong> Real-time synthesis of Wall Street ETF flows vs. retail sentiment.
+            <strong className="block text-white mt-2 mb-1">How to use:</strong> Read this before placing any trade to ensure you are trading alongside institutions, not against them.
           </div>
         </div>
       </div>

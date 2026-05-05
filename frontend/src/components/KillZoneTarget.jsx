@@ -18,8 +18,9 @@ const KillZoneTarget = ({ btcTarget, ethTarget, solTarget, isProUser, onUpgradeC
         <h2 className="font-sans font-semibold text-xs tracking-[0.2em] uppercase">Kill Zone Targets</h2>
         <div className="relative group flex items-center cursor-help">
           <span className="text-red-500/50 hover:text-red-400 transition-colors bg-red-500/10 rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-bold">?</span>
-          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2 bg-slate-800 border border-white/10 text-gray-200 text-[10px] font-sans rounded shadow-xl opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity pointer-events-none z-50 text-center leading-relaxed">
-            High-probability magnetic price points where over-leveraged traders will be forcefully liquidated.
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-slate-800 border border-white/10 text-gray-200 text-[10px] font-sans rounded shadow-xl opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity pointer-events-none z-50 text-left leading-relaxed">
+            <strong className="block text-white mb-1">What it is:</strong> Algorithmic liquidation clusters where market makers hunt over-leveraged traders.
+            <strong className="block text-white mt-2 mb-1">How to use:</strong> NEVER market-buy. Place Limit Buy orders exactly at these prices to catch flash crashes at a massive discount.
           </div>
         </div>
       </div>
