@@ -3,22 +3,26 @@ import { Target, Lock } from 'lucide-react';
 
 const KillZoneTarget = ({ btcTarget, ethTarget, solTarget, isProUser, onUpgradeClick }) => {
   return (
-    <div className="flex flex-col items-center justify-center p-5 md:p-8 h-auto rounded-2xl border border-white/10 bg-slate-900/40 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] backdrop-blur-md relative overflow-hidden group">
-      {/* Glassmorphism gradient reflection */}
-      <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+    <div className="flex flex-col items-center justify-center p-5 md:p-8 h-auto relative overflow-visible group">
+      
+      {/* Protected Background Layer */}
+      <div className="absolute inset-0 z-0 rounded-2xl border border-white/10 bg-slate-900/40 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] backdrop-blur-md overflow-hidden">
+        {/* Glassmorphism gradient reflection */}
+        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
 
-      {/* Decorative tactical corners */}
-      <div className="absolute top-4 left-4 w-6 h-6 border-t border-l border-red-500/40 rounded-tl-lg"></div>
-      <div className="absolute top-4 right-4 w-6 h-6 border-t border-r border-red-500/40 rounded-tr-lg"></div>
-      <div className="absolute bottom-4 left-4 w-6 h-6 border-b border-l border-red-500/40 rounded-bl-lg"></div>
-      <div className="absolute bottom-4 right-4 w-6 h-6 border-b border-r border-red-500/40 rounded-br-lg"></div>
+        {/* Decorative tactical corners */}
+        <div className="absolute top-4 left-4 w-6 h-6 border-t border-l border-red-500/40 rounded-tl-lg"></div>
+        <div className="absolute top-4 right-4 w-6 h-6 border-t border-r border-red-500/40 rounded-tr-lg"></div>
+        <div className="absolute bottom-4 left-4 w-6 h-6 border-b border-l border-red-500/40 rounded-bl-lg"></div>
+        <div className="absolute bottom-4 right-4 w-6 h-6 border-b border-r border-red-500/40 rounded-br-lg"></div>
+      </div>
       
       <div className="flex items-center gap-3 mb-5 md:mb-6 text-red-400 relative z-10">
         <Target size={20} strokeWidth={1.5} />
         <h2 className="font-sans font-semibold text-xs tracking-[0.2em] uppercase">Kill Zone Targets</h2>
         <div className="relative group flex items-center cursor-help">
           <span className="text-red-500/50 hover:text-red-400 transition-colors bg-red-500/10 rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-bold">?</span>
-          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-slate-800 border border-white/10 text-gray-200 text-[10px] font-sans rounded shadow-xl opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity pointer-events-none z-50 text-left leading-relaxed">
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-slate-800 border border-white/10 text-gray-200 text-[10px] font-sans rounded shadow-xl opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity pointer-events-none z-[999] text-left leading-relaxed">
             <strong className="block text-white mb-1">What it is:</strong> Algorithmic liquidation clusters where market makers hunt over-leveraged traders.
             <strong className="block text-white mt-2 mb-1">How to use:</strong> NEVER market-buy. Place Limit Buy orders exactly at these prices to catch flash crashes at a massive discount.
           </div>
@@ -60,7 +64,7 @@ const KillZoneTarget = ({ btcTarget, ethTarget, solTarget, isProUser, onUpgradeC
 
       {/* Freemium Paywall Overlay - Moved to Outermost Container */}
       {!isProUser && (
-        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center backdrop-blur-md bg-slate-900/60">
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center backdrop-blur-md bg-slate-900/60 rounded-2xl overflow-hidden">
           <Lock className="text-yellow-500 mb-3" size={32} />
           <h3 className="text-white font-sans font-bold tracking-widest uppercase mb-1">Encrypted Data</h3>
           <p className="text-gray-400 text-xs mb-5">Precision liquidity targets are restricted.</p>
