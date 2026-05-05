@@ -28,7 +28,8 @@ const AltcoinSlot = ({ id, isProUser }) => {
     setStatus('loading');
     
     try {
-      const response = await fetch(`https://ares-backend-fwr0.onrender.com/api/altcoin?ticker=${cleanTicker}`);
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+      const response = await fetch(`${baseUrl}/api/altcoin?ticker=${cleanTicker}`);
       if (!response.ok) throw new Error('Fetch failed');
       const json = await response.json();
       const targetKey = `${cleanTicker}_Kill_Zone`;
@@ -129,7 +130,8 @@ const DashboardContent = () => {
 
     const fetchRiskData = async () => {
       try {
-        const response = await fetch(`https://ares-backend-fwr0.onrender.com/api/risk?lang=${language}`);
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+        const response = await fetch(`${baseUrl}/api/risk?lang=${language}`);
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }

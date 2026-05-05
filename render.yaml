@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: ares-backend
+    env: node
+    buildCommand: npm install && npx puppeteer browsers install chrome
+    startCommand: node index.js
+    envVars:
+      - key: PUPPETEER_CACHE_DIR
+        value: /opt/render/project/puppeteer
+      - key: NODE_ENV
+        value: production
