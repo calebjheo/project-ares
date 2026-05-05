@@ -5,7 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 const KillZoneTarget = ({ btcTarget, ethTarget, solTarget, isProUser, onUpgradeClick }) => {
   const { t } = useLanguage();
   return (
-    <div className="flex flex-col items-center justify-center p-5 md:p-8 h-auto relative overflow-visible group">
+    <div className={`flex flex-col items-center justify-center p-5 md:p-8 h-auto relative overflow-visible group ${!isProUser ? 'min-h-[420px] sm:min-h-[380px]' : ''}`}>
       
       {/* Protected Background Layer */}
       <div className="absolute inset-0 z-0 rounded-2xl border border-white/10 bg-slate-900/40 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] backdrop-blur-md overflow-hidden">
@@ -66,8 +66,8 @@ const KillZoneTarget = ({ btcTarget, ethTarget, solTarget, isProUser, onUpgradeC
 
       {/* Freemium Paywall Overlay - Moved to Outermost Container */}
       {!isProUser && (
-        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center backdrop-blur-md bg-slate-900/60 rounded-2xl overflow-hidden">
-          <Lock className="text-yellow-500 mb-3" size={32} />
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center backdrop-blur-md bg-slate-900/60 rounded-2xl overflow-hidden py-6 px-4">
+          <Lock className="text-yellow-500 mb-3 shrink-0" size={32} />
           <h3 className="text-white font-sans font-bold tracking-widest uppercase mb-1">{t('encryptedData')}</h3>
           <p className="text-gray-400 text-xs mb-5">{t('encryptedDesc')}</p>
           
