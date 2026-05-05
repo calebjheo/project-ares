@@ -51,13 +51,6 @@ const AltcoinSlot = ({ id, isProUser }) => {
     return 'text-white shadow-purple-500/20 drop-shadow-[0_0_15px_rgba(168,85,247,0.4)]';
   };
 
-  const getTooltipText = (level) => {
-    if (level === 'HIGH') return 'Extreme retail leverage detected. Flash crash imminent. Do not market buy. Set limit orders exactly at the Kill Zone and wait for the flush.';
-    if (level === 'ELEVATED') return 'Leverage is building. Downside chop is highly probable. Wait for the market makers to sweep liquidity down to the Kill Zone.';
-    if (level === 'STABLE') return 'Liquidations have been flushed. Asset is sitting near structural support. Safe to accumulate near the Kill Zone.';
-    return '';
-  };
-
   const threatStyle = status === 'complete' && targetData.threatLevel ? getThreatColor(targetData.threatLevel) : 'text-white';
 
   const handleKeyDown = (e) => {
@@ -70,25 +63,17 @@ const AltcoinSlot = ({ id, isProUser }) => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center p-4 border border-white/5 rounded-xl bg-white/5 h-24 relative group">
+    <div className="flex flex-col items-center justify-center py-4 px-2 border border-white/5 rounded-xl bg-white/5 min-h-[6rem] h-auto relative group">
       <div className="text-gray-500 text-[10px] uppercase tracking-widest mb-2 flex items-center justify-center gap-1">
         {t('slot')} {id} 
         {ticker && status === 'complete' && (
           <>
             <span className="mx-1">-</span>
-            <div className="relative group/tooltip flex items-center justify-center">
-              <span className={`font-bold flex items-center gap-1 cursor-help ${threatStyle}`}>
+            <div className="flex items-center justify-center">
+              <span className={`font-bold flex items-center gap-1 ${threatStyle}`}>
                 {targetData.threatLevel && <ShieldAlert size={10} strokeWidth={2.5} />}
                 {ticker}
               </span>
-              {/* Tooltip */}
-              {targetData.threatLevel && (
-                <div className="hidden group-hover/tooltip:block absolute z-[999] w-64 p-4 bg-slate-900/95 backdrop-blur-md border border-slate-700 rounded-lg shadow-2xl -top-2 left-1/2 -translate-x-1/2 -translate-y-full font-sans text-xs text-gray-300 normal-case tracking-normal leading-relaxed text-center">
-                  <div className="font-bold text-white mb-1 uppercase tracking-widest text-[10px]">{targetData.threatLevel} RISK PROTOCOL</div>
-                  {getTooltipText(targetData.threatLevel)}
-                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-slate-900/95 border-b border-r border-slate-700 rotate-45"></div>
-                </div>
-              )}
             </div>
           </>
         )}
@@ -109,7 +94,7 @@ const AltcoinSlot = ({ id, isProUser }) => {
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           placeholder={t('tickerPlaceholder')}
-          className="bg-slate-800 text-white font-sans text-sm text-center border border-blue-500/50 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 rounded px-2 py-1 outline-none w-24 placeholder-gray-600 transition-all shadow-[0_0_10px_rgba(59,130,246,0.3)]"
+          className="bg-slate-800 text-white font-sans text-sm text-center border border-blue-500/50 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 rounded px-2 py-1 outline-none w-full max-w-[100px] placeholder-gray-600 transition-all shadow-[0_0_10px_rgba(59,130,246,0.3)]"
           onBlur={() => submit(inputValue)}
           onKeyDown={handleKeyDown}
         />
@@ -123,19 +108,13 @@ const AltcoinSlot = ({ id, isProUser }) => {
           className="flex flex-col items-center justify-center cursor-pointer hover:opacity-80 transition-opacity w-full"
         >
           {targetData.threatLevel && (
-            <div className="relative group/text-tooltip flex items-center justify-center">
-              <div className={`text-[9px] uppercase tracking-[0.2em] mb-1 font-bold ${threatStyle} opacity-80 cursor-help`}>
+            <div className="flex items-center justify-center">
+              <div className={`text-[9px] uppercase tracking-[0.2em] mb-1 font-bold ${threatStyle} opacity-80`}>
                 {targetData.threatLevel} RISK
-              </div>
-              {/* Tooltip */}
-              <div className="hidden group-hover/text-tooltip:block absolute z-[999] w-64 p-4 bg-slate-900/95 backdrop-blur-md border border-slate-700 rounded-lg shadow-2xl -top-2 left-1/2 -translate-x-1/2 -translate-y-full font-sans text-xs text-gray-300 normal-case tracking-normal leading-relaxed text-center pointer-events-none">
-                <div className="font-bold text-white mb-1 uppercase tracking-widest text-[10px]">{targetData.threatLevel} RISK PROTOCOL</div>
-                {getTooltipText(targetData.threatLevel)}
-                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-slate-900/95 border-b border-r border-slate-700 rotate-45"></div>
               </div>
             </div>
           )}
-          <div className={`font-mono font-bold tracking-tight text-center px-2 overflow-hidden text-ellipsis ${targetData.killZone.length > 20 ? 'text-[10px] leading-tight line-clamp-3 whitespace-normal text-white' : `text-xl sm:text-2xl whitespace-nowrap ${threatStyle}`}`}>
+          <div className={`font-mono font-bold tracking-tight text-center px-1 overflow-hidden text-ellipsis ${targetData.killZone.length > 20 ? 'text-[10px] leading-tight line-clamp-3 whitespace-normal text-white' : `text-xl sm:text-2xl whitespace-nowrap ${threatStyle}`}`}>
             {targetData.killZone}
           </div>
         </div>
@@ -380,10 +359,28 @@ const DashboardContent = () => {
                     </div>
                   </div>
                   
-                  <div className={`grid grid-cols-1 sm:grid-cols-3 gap-4 transition-all duration-300 ${!isProUser ? 'blur-md select-none opacity-50' : ''}`}>
-                    {[1, 2, 3].map(i => (
-                      <AltcoinSlot key={i} id={i} isProUser={isProUser} />
-                    ))}
+                  <div className={`flex flex-col md:flex-row gap-4 transition-all duration-300 ${!isProUser ? 'blur-md select-none opacity-50' : ''}`}>
+                    <div className="flex-grow grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      {[1, 2, 3].map(i => (
+                        <AltcoinSlot key={i} id={i} isProUser={isProUser} />
+                      ))}
+                    </div>
+                    {/* Consolidated Threat Level Key */}
+                    <div className="w-full md:w-48 shrink-0 flex flex-col justify-center gap-2.5 p-4 bg-slate-800/50 rounded-xl border border-white/5">
+                      <div className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-1">{t('threatKey') || 'THREAT KEY'}</div>
+                      <div className="flex items-start gap-2">
+                         <ShieldAlert size={14} className="text-red-500 mt-0.5 shrink-0" />
+                         <div className="text-[10px] text-gray-400 leading-tight"><span className="text-red-500 font-bold">HIGH:</span> Flash crash imminent. Wait for flush.</div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                         <ShieldAlert size={14} className="text-amber-500 mt-0.5 shrink-0" />
+                         <div className="text-[10px] text-gray-400 leading-tight"><span className="text-amber-500 font-bold">ELEVATED:</span> Chop probable. Let MMs sweep liquidity.</div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                         <ShieldAlert size={14} className="text-green-500 mt-0.5 shrink-0" />
+                         <div className="text-[10px] text-gray-400 leading-tight"><span className="text-green-500 font-bold">STABLE:</span> Flushed. Safe to accumulate at target.</div>
+                      </div>
+                    </div>
                   </div>
 
                   {!isProUser && (
