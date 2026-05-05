@@ -9,10 +9,10 @@ const UpgradeModal = ({ isOpen, onClose, onTermsClick }) => {
   if (!isOpen) return null;
 
   const features = [
-    "Unrestricted access to BTC, ETH, and SOL Kill Zone Targets.",
-    "Divergence SMS Alerts: Get instant text messages when retail euphoria contradicts institutional selling.",
-    "Custom Altcoin Radar: Unlock liquidation heatmaps for 3 custom altcoins of your choice.",
-    "Live Whale Watch Feed: Real-time ticker of ETF inflows and massive liquidation events."
+    t('upFeature1'),
+    t('upFeature2'),
+    t('upFeature3'),
+    t('upFeature4')
   ];
 
   return (
@@ -42,7 +42,7 @@ const UpgradeModal = ({ isOpen, onClose, onTermsClick }) => {
           </div>
 
           <h2 className="text-xl sm:text-2xl font-sans font-bold text-white tracking-wide text-center mb-2">
-            UNLOCK INSTITUTIONAL RADAR
+            {t('upgradeModalTitle')}
           </h2>
           <div className="text-center mb-8">
             <span className="text-3xl font-mono font-bold text-yellow-500">$29</span>
@@ -84,7 +84,7 @@ const UpgradeModal = ({ isOpen, onClose, onTermsClick }) => {
             {t('upgradeToPro')}
           </a>
           <p className="text-center text-gray-500 text-[10px] uppercase tracking-widest mt-4">
-            Cancel anytime. 100% secure payment.
+            {t('cancelAnytime')}
           </p>
         </div>
       </div>

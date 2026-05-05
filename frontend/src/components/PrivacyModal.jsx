@@ -33,19 +33,19 @@ const PrivacyModal = ({ isOpen, onClose }) => {
 
           <div className="space-y-6 text-gray-300 font-sans text-sm leading-relaxed">
             <p>
-              <strong>1. Data Collection:</strong> Project ARES collects minimal data necessary to operate the application. For Pro users, payment processing is handled securely by Stripe; Project ARES does not store or process your credit card information on our servers.
+              <strong>{t('privP1Title')}</strong> {t('privP1Desc')}
             </p>
             <p>
-              <strong>2. Usage Data:</strong> We may collect anonymized, non-personally identifiable usage data (such as feature interaction rates) to improve the algorithmic synthesis and the user interface.
+              <strong>{t('privP2Title')}</strong> {t('privP2Desc')}
             </p>
             <p>
-              <strong>3. Local Storage:</strong> The application uses your browser's Local Storage to maintain your session state (such as your Pro status token) and your preferred language settings.
+              <strong>{t('privP3Title')}</strong> {t('privP3Desc')}
             </p>
             <p>
-              <strong>4. Third-Party Sharing:</strong> We do not sell, rent, or trade your personal information to third parties. 
+              <strong>{t('privP4Title')}</strong> {t('privP4Desc')}
             </p>
             <p>
-              <strong>5. Security:</strong> All API requests are routed through a secured, encrypted backend architecture to protect our AI models and prevent unauthorized data scraping.
+              <strong>{t('privP5Title')}</strong> {t('privP5Desc')}
             </p>
           </div>
         </div>

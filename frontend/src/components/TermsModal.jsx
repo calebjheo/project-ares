@@ -33,19 +33,19 @@ const TermsModal = ({ isOpen, onClose }) => {
 
           <div className="space-y-6 text-gray-300 font-sans text-sm leading-relaxed">
             <p>
-              <strong>1. Educational Purpose Only:</strong> The Project ARES dashboard and all provided quantitative data are strictly for educational and research purposes. Project ARES is NOT a registered financial advisor, broker, or investment entity.
+              <strong>{t('termsP1Title')}</strong> {t('termsP1Desc')}
             </p>
             <p>
-              <strong>2. No Financial Advice:</strong> None of the data, alerts, "Kill Zones", "Market Posture" states, or synthetic intelligence outputs constitute financial advice, investment recommendations, or an offer to buy/sell any asset.
+              <strong>{t('termsP2Title')}</strong> {t('termsP2Desc')}
             </p>
             <p>
-              <strong>3. Assumption of Risk:</strong> Cryptocurrency trading is highly speculative and carries a severe risk of total capital loss. By using this tool, you acknowledge that you are trading at your own risk and that you will not hold the developers, creators, or affiliates of Project ARES liable for any financial losses.
+              <strong>{t('termsP3Title')}</strong> {t('termsP3Desc')}
             </p>
             <p>
-              <strong>4. Data Accuracy:</strong> While Project ARES synthesizes real-time data from various APIs (including Coinglass and Farside), we do not guarantee the accuracy, timeliness, or completeness of the data. 
+              <strong>{t('termsP4Title')}</strong> {t('termsP4Desc')}
             </p>
             <p>
-              <strong>5. Pro Subscription:</strong> The Pro tier is billed monthly at $29/mo via Stripe. You may cancel at any time. Due to the digital nature of the data, all sales are final and non-refundable.
+              <strong>{t('termsP5Title')}</strong> {t('termsP5Desc')}
             </p>
           </div>
         </div>

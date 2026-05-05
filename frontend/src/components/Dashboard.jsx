@@ -12,6 +12,7 @@ import { Info, BookText, Target, Lock } from 'lucide-react';
 import { LanguageProvider, useLanguage } from '../contexts/LanguageContext';
 
 const AltcoinSlot = ({ id, isProUser }) => {
+  const { t } = useLanguage();
   const [status, setStatus] = useState('idle'); // idle, input, loading, complete
   const [ticker, setTicker] = useState('');
   const [target, setTarget] = useState('');
@@ -31,11 +32,11 @@ const AltcoinSlot = ({ id, isProUser }) => {
       if (!response.ok) throw new Error('Fetch failed');
       const json = await response.json();
       const targetKey = `${cleanTicker}_Kill_Zone`;
-      setTarget(json[targetKey] || 'NOT FOUND');
+      setTarget(json[targetKey] || t('notFound'));
       setStatus('complete');
     } catch (err) {
       console.error(err);
-      setTarget('ERROR');
+      setTarget(t('error'));
       setStatus('complete');
     }
   };
@@ -52,7 +53,7 @@ const AltcoinSlot = ({ id, isProUser }) => {
   return (
     <div className="flex flex-col items-center justify-center p-4 border border-white/5 rounded-xl bg-white/5 h-24 relative group">
       <div className="text-gray-500 text-[10px] uppercase tracking-widest mb-2">
-        Slot {id} {ticker && status === 'complete' ? `- ${ticker}` : ''}
+        {t('slot')} {id} {ticker && status === 'complete' ? `- ${ticker}` : ''}
       </div>
       
       {!isProUser ? (
@@ -61,7 +62,7 @@ const AltcoinSlot = ({ id, isProUser }) => {
         <div 
           onClick={() => setStatus('input')}
           className="font-sans text-sm text-gray-400 hover:text-white cursor-pointer transition-colors">
-          Select Asset +
+          {t('selectAsset')}
         </div>
       ) : status === 'input' ? (
         <input 
@@ -69,14 +70,14 @@ const AltcoinSlot = ({ id, isProUser }) => {
           type="text"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          placeholder="TICKER"
+          placeholder={t('tickerPlaceholder')}
           className="bg-slate-800 text-white font-sans text-sm text-center border border-blue-500/50 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 rounded px-2 py-1 outline-none w-24 placeholder-gray-600 transition-all shadow-[0_0_10px_rgba(59,130,246,0.3)]"
           onBlur={() => submit(inputValue)}
           onKeyDown={handleKeyDown}
         />
       ) : status === 'loading' ? (
         <div className="font-mono text-[10px] text-blue-400 animate-pulse tracking-widest">
-          SCANNING...
+          {t('scanning')}
         </div>
       ) : (
         <div 
