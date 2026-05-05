@@ -62,6 +62,13 @@ const AltcoinSlot = ({ id, isProUser }) => {
     }
   };
 
+  const getLocalizedThreatRisk = (level) => {
+    if (level === 'HIGH') return t('threatHighRisk');
+    if (level === 'ELEVATED') return t('threatElevatedRisk');
+    if (level === 'STABLE') return t('threatStableRisk');
+    return `${level} RISK`;
+  };
+
   return (
     <div className="flex flex-col items-center justify-center py-4 px-2 border border-white/5 rounded-xl bg-white/5 min-h-[6rem] h-full relative group">
       <div className="text-gray-500 text-[9px] sm:text-[10px] uppercase tracking-widest mb-2 flex flex-wrap items-center justify-center gap-x-1 gap-y-0.5 whitespace-nowrap">
@@ -108,7 +115,7 @@ const AltcoinSlot = ({ id, isProUser }) => {
           {targetData.threatLevel && (
             <div className="flex items-center justify-center whitespace-nowrap">
               <div className={`text-[8px] sm:text-[9px] uppercase tracking-[0.15em] mb-1 font-bold ${threatStyle} opacity-80`}>
-                {targetData.threatLevel} RISK
+                {getLocalizedThreatRisk(targetData.threatLevel)}
               </div>
             </div>
           )}
