@@ -266,7 +266,7 @@ const Dashboard = () => {
 
                 {/* Dedicated Upgrade Banner */}
                 {!isProUser && (
-                  <div className="w-full bg-blue-600/20 border border-blue-500/50 p-4 rounded-xl mt-6 flex justify-between items-center">
+                  <div className="w-full bg-blue-600/20 border border-blue-500/50 p-4 rounded-xl flex justify-between items-center">
                     <div className="text-white font-sans text-xs sm:text-sm md:text-base pr-4">
                       Unlock Institutional Flow Data & Custom Altcoin Radar
                     </div>
