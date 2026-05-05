@@ -1,7 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { X, CheckCircle2, Zap } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
-const UpgradeModal = ({ isOpen, onClose }) => {
+const UpgradeModal = ({ isOpen, onClose, onTermsClick }) => {
+  const { t } = useLanguage();
+  const [agreedToTos, setAgreedToTos] = useState(false);
+
   if (!isOpen) return null;
 
   const features = [
@@ -54,9 +58,31 @@ const UpgradeModal = ({ isOpen, onClose }) => {
             ))}
           </div>
 
-          <button className="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold uppercase tracking-widest text-sm py-4 rounded-xl transition-all shadow-[0_0_20px_rgba(234,179,8,0.4)] flex items-center justify-center gap-2">
-            Subscribe via Stripe
-          </button>
+          <div className="flex items-center gap-2 mb-4 justify-center">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input 
+                type="checkbox" 
+                checked={agreedToTos} 
+                onChange={(e) => setAgreedToTos(e.target.checked)}
+                className="w-4 h-4 rounded border-yellow-500/50 bg-slate-900 text-yellow-500 focus:ring-yellow-500/50 cursor-pointer"
+              />
+              <span className="text-gray-400 text-xs font-sans uppercase tracking-widest select-none">
+                I agree to the <button onClick={(e) => { e.preventDefault(); onTermsClick?.(); }} className="text-yellow-500 hover:underline">{t('termsOfService')}</button>
+              </span>
+            </label>
+          </div>
+
+          <a 
+            href={agreedToTos ? "https://buy.stripe.com/6oU6oI2zzfdX6eTao67ok01" : "#"}
+            onClick={(e) => {
+              if (!agreedToTos) {
+                e.preventDefault();
+                alert("You must agree to the Terms of Service to upgrade.");
+              }
+            }}
+            className={`w-full font-bold uppercase tracking-widest text-sm py-4 rounded-xl transition-all flex items-center justify-center gap-2 ${agreedToTos ? 'bg-yellow-500 hover:bg-yellow-400 text-black shadow-[0_0_20px_rgba(234,179,8,0.4)] cursor-pointer' : 'bg-slate-800 text-gray-500 cursor-not-allowed border border-slate-700'}`}>
+            {t('upgradeToPro')}
+          </a>
           <p className="text-center text-gray-500 text-[10px] uppercase tracking-widest mt-4">
             Cancel anytime. 100% secure payment.
           </p>

@@ -5,8 +5,11 @@ import KillZoneTarget from './KillZoneTarget';
 import FieldManualModal from './FieldManualModal';
 import MethodologyModal from './MethodologyModal';
 import UpgradeModal from './UpgradeModal';
+import TermsModal from './TermsModal';
+import PrivacyModal from './PrivacyModal';
 import AresLogo from './AresLogo';
 import { Info, BookText, Target, Lock } from 'lucide-react';
+import { LanguageProvider, useLanguage } from '../contexts/LanguageContext';
 
 const AltcoinSlot = ({ id, isProUser }) => {
   const [status, setStatus] = useState('idle'); // idle, input, loading, complete
@@ -86,13 +89,17 @@ const AltcoinSlot = ({ id, isProUser }) => {
   );
 };
 
-const Dashboard = () => {
+const DashboardContent = () => {
+  const { language, setLanguage, t } = useLanguage();
+  const [agreedToTos, setAgreedToTos] = useState(false);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isMethodologyOpen, setIsMethodologyOpen] = useState(false);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [isTermsOpen, setIsTermsOpen] = useState(false);
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const [isProUser, setIsProUser] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('ares_pro_status') === 'active';
@@ -171,15 +178,25 @@ const Dashboard = () => {
                 className="flex items-center gap-1.5 md:gap-2 px-2.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 transition-colors text-[10px] md:text-xs font-sans tracking-widest uppercase shadow-[0_0_15px_rgba(59,130,246,0.2)]"
               >
                 <BookText size={12} className="md:w-3.5 md:h-3.5" />
-                Methodology
+                {t('methodology')}
               </button>
               <button 
                 onClick={() => setIsModalOpen(true)}
                 className="flex items-center gap-1.5 md:gap-2 px-2.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 transition-colors text-[10px] md:text-xs font-sans tracking-widest uppercase shadow-[0_0_15px_rgba(59,130,246,0.2)]"
               >
                 <BookText size={12} className="md:w-3.5 md:h-3.5" />
-                Field Manual
+                {t('fieldManual')}
               </button>
+              <select 
+                value={language} 
+                onChange={(e) => setLanguage(e.target.value)}
+                className="bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 rounded-md px-2 py-1 text-xs outline-none focus:border-blue-500 ml-2 font-sans tracking-widest uppercase cursor-pointer"
+              >
+                <option value="EN" className="bg-slate-900">EN</option>
+                <option value="KO" className="bg-slate-900">KO</option>
+                <option value="ES" className="bg-slate-900">ES</option>
+                <option value="JP" className="bg-slate-900">JP</option>
+              </select>
             </div>
           </div>
           
@@ -189,11 +206,11 @@ const Dashboard = () => {
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/50 border border-white/5 shadow-inner w-max">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.8)]"></div>
               <span className="text-gray-300 font-mono text-[9px] md:text-[10px] uppercase tracking-widest">
-                Last Sweep: {lastSweep || '--:--'}
+                {t('lastSweep')}: {lastSweep || '--:--'}
               </span>
             </div>
             <p className="font-sans text-[11px] md:text-sm text-gray-400 whitespace-normal md:whitespace-nowrap overflow-hidden">
-              Institutional data synthesis. Do not be exit liquidity. Trade the math.
+              {t('radarStatus')}
             </p>
           </div>
 
@@ -208,16 +225,16 @@ const Dashboard = () => {
           <div className="rounded-2xl border border-white/10 bg-slate-900/40 p-5 md:p-6 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] backdrop-blur-md h-full">
             <div className="flex items-center gap-2 mb-6 text-blue-400">
               <Info size={18} />
-              <h3 className="font-sans font-semibold text-xs tracking-[0.2em] uppercase">System Protocol</h3>
+              <h3 className="font-sans font-semibold text-xs tracking-[0.2em] uppercase">{t('systemProtocol')}</h3>
             </div>
             <div className="space-y-6 text-sm text-gray-400 font-sans leading-relaxed">
               <div>
-                <strong className="text-gray-200 block mb-1">Posture Shield</strong>
-                Synthesizes broad market sentiment, institutional flows, and price action to determine the current macro stance.
+                <strong className="text-gray-200 block mb-1">{t('postureTitle')}</strong>
+                {t('protocolPostureDesc')}
               </div>
               <div>
-                <strong className="text-gray-200 block mb-1">Kill Zone Targets</strong>
-                High-probability liquidation clusters and critical technical zones where major price reactions are expected for BTC, ETH, and SOL.
+                <strong className="text-gray-200 block mb-1">{t('killzoneTitle')}</strong>
+                {t('protocolKillzoneDesc')}
               </div>
             </div>
           </div>
@@ -266,14 +283,33 @@ const Dashboard = () => {
 
                 {/* Dedicated Upgrade Banner */}
                 {!isProUser && (
-                  <div className="w-full bg-blue-600/20 border border-blue-500/50 p-4 rounded-xl flex justify-between items-center">
-                    <div className="text-white font-sans text-xs sm:text-sm md:text-base pr-4">
-                      Unlock Institutional Flow Data & Custom Altcoin Radar
+                  <div className="w-full bg-blue-600/20 border border-blue-500/50 p-4 rounded-xl flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div className="flex flex-col gap-2 w-full sm:w-auto pr-0 sm:pr-4">
+                      <div className="text-white font-sans text-xs sm:text-sm md:text-base">
+                        {t('unlockInstitutional')}
+                      </div>
+                      <label className="flex items-center gap-2 cursor-pointer mt-1">
+                        <input 
+                          type="checkbox" 
+                          checked={agreedToTos} 
+                          onChange={(e) => setAgreedToTos(e.target.checked)}
+                          className="w-3.5 h-3.5 rounded border-blue-500/50 bg-slate-900/50 text-blue-600 focus:ring-blue-500/50 focus:ring-offset-0 cursor-pointer"
+                        />
+                        <span className="text-gray-400 text-[9px] md:text-[10px] font-sans uppercase tracking-wider select-none">
+                          I agree to the <button onClick={(e) => { e.preventDefault(); setIsTermsOpen(true); }} className="text-blue-400 hover:underline">{t('termsOfService')}</button> & understand this is "As-Is" data.
+                        </span>
+                      </label>
                     </div>
                     <a 
-                      href="https://buy.stripe.com/6oU6oI2zzfdX6eTao67ok01"
-                      className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-lg shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-colors text-[10px] sm:text-xs tracking-widest uppercase whitespace-nowrap">
-                      UPGRADE TO PRO - $29/MO
+                      href={agreedToTos ? "https://buy.stripe.com/6oU6oI2zzfdX6eTao67ok01" : "#"}
+                      onClick={(e) => {
+                        if (!agreedToTos) {
+                          e.preventDefault();
+                          alert("You must agree to the Terms of Service to upgrade.");
+                        }
+                      }}
+                      className={`font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-lg shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all duration-300 text-[10px] sm:text-xs tracking-widest uppercase whitespace-nowrap ${agreedToTos ? 'bg-blue-600 hover:bg-blue-500 text-white cursor-pointer' : 'bg-slate-700/50 text-gray-500 cursor-not-allowed border border-gray-600/30'}`}>
+                      {t('upgradeToPro')}
                     </a>
                   </div>
                 )}
@@ -283,7 +319,7 @@ const Dashboard = () => {
                   <div className="flex items-start justify-between mb-6 relative z-10">
                     <div className="flex items-center gap-3 text-purple-400">
                       <Target size={20} strokeWidth={1.5} />
-                      <h2 className="font-sans font-semibold text-xs tracking-[0.2em] uppercase">Custom Altcoin Radar</h2>
+                      <h2 className="font-sans font-semibold text-xs tracking-[0.2em] uppercase">{t('radarTitle')}</h2>
                     </div>
                   </div>
                   
@@ -297,7 +333,7 @@ const Dashboard = () => {
                     <div className="absolute inset-0 flex flex-col items-center justify-center z-20">
                       <div className="bg-purple-500/20 border border-purple-500/50 px-4 py-1.5 rounded-full backdrop-blur-md">
                         <span className="text-purple-300 font-sans font-bold text-[10px] tracking-widest uppercase flex items-center gap-2">
-                          <Lock size={12} /> Pro Feature
+                          <Lock size={12} /> {t('proFeature')}
                         </span>
                       </div>
                     </div>
@@ -314,7 +350,7 @@ const Dashboard = () => {
         <div className="max-w-7xl mx-auto px-6 relative flex items-center">
           <div className="absolute left-6 top-1/2 -translate-y-1/2 z-20 bg-[#060b14] px-2 border-r border-white/10 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-            <span className="text-blue-400 font-sans font-bold text-[9px] md:text-[10px] tracking-widest uppercase whitespace-nowrap">Whale Watch</span>
+            <span className="text-blue-400 font-sans font-bold text-[9px] md:text-[10px] tracking-widest uppercase whitespace-nowrap">{t('whaleWatch')}</span>
           </div>
 
           <div className={`relative pl-32 whitespace-nowrap overflow-hidden flex items-center h-5 transition-all duration-300 ${!isProUser ? 'blur-sm select-none opacity-40' : ''}`}>
@@ -344,19 +380,27 @@ const Dashboard = () => {
       {/* Legal Armor Footer */}
       <footer className="fixed bottom-0 w-full border-t border-white/5 bg-[#0a0f1c]/90 backdrop-blur-md py-4 px-6 z-50 text-center">
         <p className="font-sans text-[9px] sm:text-[10px] md:text-xs text-gray-500 uppercase tracking-wider max-w-5xl mx-auto">
-          DISCLAIMER: Project ARES is a data synthesis tool, not financial advice. Cryptocurrency trading carries a high risk of total loss. The developers are not liable for any trading decisions made based on this data.
+          {t('disclaimer')}
         </p>
         <p className="font-sans text-[9px] sm:text-[10px] md:text-xs text-gray-500 uppercase tracking-widest mt-2 max-w-5xl mx-auto">
-          © 2026 Project ARES. All rights reserved.
+          {t('rightsReserved')} | <button onClick={() => setIsTermsOpen(true)} className="hover:text-gray-300 transition-colors">{t('termsOfService')}</button> | <button onClick={() => setIsPrivacyOpen(true)} className="hover:text-gray-300 transition-colors">{t('privacyPolicy')}</button>
         </p>
       </footer>
 
       {/* Modal Overlays */}
       <FieldManualModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
       <MethodologyModal isOpen={isMethodologyOpen} onClose={() => setIsMethodologyOpen(false)} />
-      <UpgradeModal isOpen={isUpgradeModalOpen} onClose={() => setIsUpgradeModalOpen(false)} />
+      <UpgradeModal isOpen={isUpgradeModalOpen} onClose={() => setIsUpgradeModalOpen(false)} onTermsClick={() => { setIsUpgradeModalOpen(false); setIsTermsOpen(true); }} />
+      <TermsModal isOpen={isTermsOpen} onClose={() => setIsTermsOpen(false)} />
+      <PrivacyModal isOpen={isPrivacyOpen} onClose={() => setIsPrivacyOpen(false)} />
     </div>
   );
 };
+
+const Dashboard = () => (
+  <LanguageProvider>
+    <DashboardContent />
+  </LanguageProvider>
+);
 
 export default Dashboard;

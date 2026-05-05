@@ -1,7 +1,10 @@
 import React from 'react';
 import { ShieldAlert, Shield, ShieldCheck } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const PostureShield = ({ posture }) => {
+  const { t } = useLanguage();
+
   const getPostureStyles = () => {
     switch (posture?.toLowerCase()) {
       case 'danger':
@@ -50,12 +53,12 @@ const PostureShield = ({ posture }) => {
       {/* Content Layer */}
       <div className="relative z-10 flex flex-col items-center w-full">
         <div className="flex items-center gap-3 mb-4">
-          <h2 className="text-gray-400 font-sans font-semibold text-xs tracking-[0.2em] uppercase">Market Posture</h2>
+          <h2 className="text-gray-400 font-sans font-semibold text-xs tracking-[0.2em] uppercase">{t('postureTitle')}</h2>
           <div className="relative group/tooltip flex items-center cursor-help">
             <span className="text-gray-500/50 hover:text-gray-400 transition-colors bg-white/5 rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-bold">?</span>
             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-slate-800 border border-white/10 text-gray-200 text-[10px] font-sans rounded shadow-xl opacity-0 group-hover/tooltip:opacity-100 group-active/tooltip:opacity-100 transition-opacity pointer-events-none z-[999] text-left leading-relaxed">
-              <strong className="block text-white mb-1">What it is:</strong> The AI's calculation of the macro environment based on institutional flows.
-              <strong className="block text-white mt-2 mb-1">How to use:</strong> Green = Safe to increase position sizing. Yellow = Reduce sizing. Red = Move to heavy cash reserves and prepare for crashes.
+              <strong className="block text-white mb-1">{t('whatItIs')}</strong> {t('postureWhatDesc')}
+              <strong className="block text-white mt-2 mb-1">{t('howToUse')}</strong> {t('postureHowDesc')}
             </div>
           </div>
         </div>
