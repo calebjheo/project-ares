@@ -8,7 +8,7 @@ async function analyzeAltcoinHeatmap(ticker, base64Image) {
         throw new Error('GEMINI_API_KEY is not set in environment variables');
     }
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${apiKey}`;
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
     const requestBody = {
         contents: [
@@ -51,5 +51,6 @@ async function analyzeAltcoinHeatmap(ticker, base64Image) {
 }
 
 // 1x1 transparent png
-const mockImage = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+const fs = require('fs');
+const mockImage = fs.readFileSync('screenshot.png', 'base64');
 analyzeAltcoinHeatmap("AVAX", mockImage);
