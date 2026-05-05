@@ -8,14 +8,14 @@ import UpgradeModal from './UpgradeModal';
 import TermsModal from './TermsModal';
 import PrivacyModal from './PrivacyModal';
 import AresLogo from './AresLogo';
-import { Info, BookText, Target, Lock } from 'lucide-react';
+import { Info, BookText, Target, Lock, ShieldAlert } from 'lucide-react';
 import { LanguageProvider, useLanguage } from '../contexts/LanguageContext';
 
 const AltcoinSlot = ({ id, isProUser }) => {
   const { t } = useLanguage();
   const [status, setStatus] = useState('idle'); // idle, input, loading, complete
   const [ticker, setTicker] = useState('');
-  const [target, setTarget] = useState('');
+  const [targetData, setTargetData] = useState({ killZone: '', threatLevel: '' });
   const [inputValue, setInputValue] = useState('');
 
   const submit = async (val) => {
@@ -32,15 +32,26 @@ const AltcoinSlot = ({ id, isProUser }) => {
       const response = await fetch(`${baseUrl}/api/altcoin?ticker=${cleanTicker}`);
       if (!response.ok) throw new Error('Fetch failed');
       const json = await response.json();
-      const targetKey = `${cleanTicker}_Kill_Zone`;
-      setTarget(json[targetKey] || t('notFound'));
+      setTargetData({
+        killZone: json.Kill_Zone || t('notFound'),
+        threatLevel: json.Threat_Level || ''
+      });
       setStatus('complete');
     } catch (err) {
       console.error(err);
-      setTarget(t('error'));
+      setTargetData({ killZone: t('error'), threatLevel: '' });
       setStatus('complete');
     }
   };
+
+  const getThreatColor = (level) => {
+    if (level === 'HIGH') return 'text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]';
+    if (level === 'ELEVATED') return 'text-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.8)]';
+    if (level === 'STABLE') return 'text-green-500 drop-shadow-[0_0_8px_rgba(34,197,94,0.8)]';
+    return 'text-white shadow-purple-500/20 drop-shadow-[0_0_15px_rgba(168,85,247,0.4)]';
+  };
+
+  const threatStyle = status === 'complete' && targetData.threatLevel ? getThreatColor(targetData.threatLevel) : 'text-white';
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
@@ -54,7 +65,16 @@ const AltcoinSlot = ({ id, isProUser }) => {
   return (
     <div className="flex flex-col items-center justify-center p-4 border border-white/5 rounded-xl bg-white/5 h-24 relative group">
       <div className="text-gray-500 text-[10px] uppercase tracking-widest mb-2 flex items-center justify-center gap-1">
-        {t('slot')} {id} {ticker && status === 'complete' && <><span className="mx-1">-</span><span className="text-white font-bold">{ticker}</span></>}
+        {t('slot')} {id} 
+        {ticker && status === 'complete' && (
+          <>
+            <span className="mx-1">-</span>
+            <span className={`font-bold flex items-center gap-1 ${threatStyle}`}>
+              {targetData.threatLevel && <ShieldAlert size={10} strokeWidth={2.5} />}
+              {ticker}
+            </span>
+          </>
+        )}
       </div>
       
       {!isProUser ? (
@@ -83,10 +103,17 @@ const AltcoinSlot = ({ id, isProUser }) => {
       ) : (
         <div 
           onClick={() => { setStatus('input'); setInputValue(''); }}
-          className={`font-mono font-bold text-white tracking-tight shadow-purple-500/20 drop-shadow-[0_0_15px_rgba(168,85,247,0.4)] cursor-pointer hover:opacity-80 transition-opacity w-full text-center px-2 overflow-hidden text-ellipsis ${target.length > 20 ? 'text-[10px] leading-tight line-clamp-3 whitespace-normal' : 'text-xl sm:text-2xl whitespace-nowrap'}`}
-          title={target}
+          className="flex flex-col items-center justify-center cursor-pointer hover:opacity-80 transition-opacity w-full"
+          title={targetData.killZone}
         >
-          {target}
+          {targetData.threatLevel && (
+            <div className={`text-[9px] uppercase tracking-[0.2em] mb-1 font-bold ${threatStyle} opacity-80`}>
+              {targetData.threatLevel} RISK
+            </div>
+          )}
+          <div className={`font-mono font-bold tracking-tight text-center px-2 overflow-hidden text-ellipsis ${targetData.killZone.length > 20 ? 'text-[10px] leading-tight line-clamp-3 whitespace-normal text-white' : `text-xl sm:text-2xl whitespace-nowrap ${threatStyle}`}`}>
+            {targetData.killZone}
+          </div>
         </div>
       )}
     </div>

@@ -166,7 +166,10 @@ async function analyzeAltcoinHeatmap(ticker) {
                 role: 'user',
                 parts: [
                     {
-                        text: `You are an institutional quantitative risk engine. Calculate a realistic estimated downside liquidation cluster ("Kill Zone") for the cryptocurrency ticker ${ticker} based on typical market structure and volatility. Output ONLY a valid JSON object with a single key: "${ticker}_Kill_Zone" and the exact estimated price target formatted exactly like "$PRICE" (e.g. "$16.50"). Do not include the ticker name in the value. Do not include markdown.`
+                        text: `You are an institutional quantitative risk engine. Calculate a realistic estimated downside liquidation cluster ("Kill Zone") for the cryptocurrency ticker ${ticker} based on typical market structure and volatility. Output ONLY a valid JSON object with exactly TWO keys: 
+1. "Kill_Zone": The exact estimated price target formatted exactly like "$PRICE" (e.g. "$16.50"). Do not include the ticker name.
+2. "Threat_Level": Must be exactly one word: 'HIGH', 'ELEVATED', or 'STABLE', based on how over-leveraged you estimate the heatmap to be.
+Do not include markdown.`
                     }
                 ]
             }
