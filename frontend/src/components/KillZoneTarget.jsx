@@ -86,6 +86,14 @@ const KillZoneTarget = ({ btcTarget, ethTarget, solTarget, isProUser, onUpgradeC
             </ul>
           </div>
 
+          <button 
+            onClick={onUpgradeClick}
+            className="mt-2 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-lg shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all duration-300 text-[10px] sm:text-xs tracking-widest uppercase w-full max-w-[280px]"
+          >
+            START 7-DAY FREE TRIAL
+          </button>
+          <p className="text-xs text-gray-400 mt-2">Then $29/month. Cancel anytime.</p>
+
         </div>
       )}
     </div>
