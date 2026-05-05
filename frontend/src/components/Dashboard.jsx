@@ -51,6 +51,13 @@ const AltcoinSlot = ({ id, isProUser }) => {
     return 'text-white shadow-purple-500/20 drop-shadow-[0_0_15px_rgba(168,85,247,0.4)]';
   };
 
+  const getTooltipText = (level) => {
+    if (level === 'HIGH') return 'Extreme retail leverage detected. Flash crash imminent. Do not market buy. Set limit orders exactly at the Kill Zone and wait for the flush.';
+    if (level === 'ELEVATED') return 'Leverage is building. Downside chop is highly probable. Wait for the market makers to sweep liquidity down to the Kill Zone.';
+    if (level === 'STABLE') return 'Liquidations have been flushed. Asset is sitting near structural support. Safe to accumulate near the Kill Zone.';
+    return '';
+  };
+
   const threatStyle = status === 'complete' && targetData.threatLevel ? getThreatColor(targetData.threatLevel) : 'text-white';
 
   const handleKeyDown = (e) => {
@@ -69,10 +76,20 @@ const AltcoinSlot = ({ id, isProUser }) => {
         {ticker && status === 'complete' && (
           <>
             <span className="mx-1">-</span>
-            <span className={`font-bold flex items-center gap-1 ${threatStyle}`}>
-              {targetData.threatLevel && <ShieldAlert size={10} strokeWidth={2.5} />}
-              {ticker}
-            </span>
+            <div className="relative group/tooltip flex items-center justify-center">
+              <span className={`font-bold flex items-center gap-1 cursor-help ${threatStyle}`}>
+                {targetData.threatLevel && <ShieldAlert size={10} strokeWidth={2.5} />}
+                {ticker}
+              </span>
+              {/* Tooltip */}
+              {targetData.threatLevel && (
+                <div className="hidden group-hover/tooltip:block absolute z-[999] w-64 p-4 bg-slate-900/95 backdrop-blur-md border border-slate-700 rounded-lg shadow-2xl -top-2 left-1/2 -translate-x-1/2 -translate-y-full font-sans text-xs text-gray-300 normal-case tracking-normal leading-relaxed text-center">
+                  <div className="font-bold text-white mb-1 uppercase tracking-widest text-[10px]">{targetData.threatLevel} RISK PROTOCOL</div>
+                  {getTooltipText(targetData.threatLevel)}
+                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-slate-900/95 border-b border-r border-slate-700 rotate-45"></div>
+                </div>
+              )}
+            </div>
           </>
         )}
       </div>
@@ -104,11 +121,18 @@ const AltcoinSlot = ({ id, isProUser }) => {
         <div 
           onClick={() => { setStatus('input'); setInputValue(''); }}
           className="flex flex-col items-center justify-center cursor-pointer hover:opacity-80 transition-opacity w-full"
-          title={targetData.killZone}
         >
           {targetData.threatLevel && (
-            <div className={`text-[9px] uppercase tracking-[0.2em] mb-1 font-bold ${threatStyle} opacity-80`}>
-              {targetData.threatLevel} RISK
+            <div className="relative group/text-tooltip flex items-center justify-center">
+              <div className={`text-[9px] uppercase tracking-[0.2em] mb-1 font-bold ${threatStyle} opacity-80 cursor-help`}>
+                {targetData.threatLevel} RISK
+              </div>
+              {/* Tooltip */}
+              <div className="hidden group-hover/text-tooltip:block absolute z-[999] w-64 p-4 bg-slate-900/95 backdrop-blur-md border border-slate-700 rounded-lg shadow-2xl -top-2 left-1/2 -translate-x-1/2 -translate-y-full font-sans text-xs text-gray-300 normal-case tracking-normal leading-relaxed text-center pointer-events-none">
+                <div className="font-bold text-white mb-1 uppercase tracking-widest text-[10px]">{targetData.threatLevel} RISK PROTOCOL</div>
+                {getTooltipText(targetData.threatLevel)}
+                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-slate-900/95 border-b border-r border-slate-700 rotate-45"></div>
+              </div>
             </div>
           )}
           <div className={`font-mono font-bold tracking-tight text-center px-2 overflow-hidden text-ellipsis ${targetData.killZone.length > 20 ? 'text-[10px] leading-tight line-clamp-3 whitespace-normal text-white' : `text-xl sm:text-2xl whitespace-nowrap ${threatStyle}`}`}>
