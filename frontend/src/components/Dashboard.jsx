@@ -129,9 +129,9 @@ const DashboardContent = () => {
 
     const fetchRiskData = async () => {
       try {
-        const response = await fetch('https://ares-backend-fwr0.onrender.com/api/risk');
+        const response = await fetch(`https://ares-backend-fwr0.onrender.com/api/risk?lang=${language}`);
         if (!response.ok) {
-          throw new Error('Failed to fetch risk data');
+          throw new Error('Network response was not ok');
         }
         const json = await response.json();
         setData(json);

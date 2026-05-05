@@ -53,7 +53,7 @@ async function takeCoinglassScreenshot() {
 }
 
 // Function to send data to Gemini 1.5 Pro API
-async function sendToGemini(payload) {
+async function sendToGemini(payload, lang = 'EN') {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
         throw new Error('GEMINI_API_KEY is not set in environment variables');
@@ -67,10 +67,13 @@ async function sendToGemini(payload) {
                 role: 'user',
                 parts: [
                     {
-                        text: `You are a machine API. You must output ONLY valid JSON. The 'Market_Posture' field MUST be exactly one word. The 'Actionable_Intel' field MUST include specific ETF inflow/outflow numbers and coin tickers. Here is the EXACT format you must follow:\n` +
+                        text: `You are a machine API. You must output ONLY valid JSON. The 'Market_Posture' field MUST be exactly one English word (e.g., AGGRESSIVE, NEUTRAL, DEFENSIVE, DANGER). The 'Actionable_Intel' field MUST include specific ETF inflow/outflow numbers and coin tickers. 
+IMPORTANT: The 'Actionable_Intel' field MUST be written in the ${lang} language.
+
+Here is the EXACT JSON format you must follow:\n` +
                               `{\n` +
                               `"Market_Posture": "DEFENSIVE",\n` +
-                              `"Actionable_Intel": "BTC ETFs saw $335M inflows led by BlackRock, while ETH ETFs saw $50M outflows. Retail sentiment is euphoric at 78. Prepare for a liquidity flush.",\n` +
+                              `"Actionable_Intel": "[Translate this intel into ${lang}]: BTC ETFs saw $335M inflows led by BlackRock, while ETH ETFs saw $50M outflows. Retail sentiment is euphoric at 78. Prepare for a liquidity flush.",\n` +
                               `"BTC_Kill_Zone": "BTC: $74,800",\n` +
                               `"ETH_Kill_Zone": "ETH: $2,150",\n` +
                               `"SOL_Kill_Zone": "SOL: $71.50"\n` +
@@ -111,7 +114,8 @@ app.use(cors());
 app.use(express.json());
 
 app.get('/api/risk', async (req, res) => {
-    console.log('API Request: Fetching risk assessment data...');
+    const lang = req.query.lang || 'EN';
+    console.log(`API Request: Fetching risk assessment data for lang: ${lang}...`);
     try {
         console.log('1. Fetching CoinGecko & Fear/Greed Data...');
         const cryptoData = await fetchCryptoData();
@@ -130,7 +134,7 @@ app.get('/api/risk', async (req, res) => {
         
         if (cryptoData && etfFlow && heatmapScreenshot) {
             console.log('4. Sending payload to Gemini 1.5 Pro API...');
-            const geminiResponse = await sendToGemini(payload);
+            const geminiResponse = await sendToGemini(payload, lang);
             let responseText = geminiResponse.candidates[0].content.parts[0].text;
             
             // Clean markdown block formatting if present
