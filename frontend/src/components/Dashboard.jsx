@@ -8,6 +8,84 @@ import UpgradeModal from './UpgradeModal';
 import AresLogo from './AresLogo';
 import { Info, BookText, Target, Lock } from 'lucide-react';
 
+const AltcoinSlot = ({ id, isProUser }) => {
+  const [status, setStatus] = useState('idle'); // idle, input, loading, complete
+  const [ticker, setTicker] = useState('');
+  const [target, setTarget] = useState('');
+  const [inputValue, setInputValue] = useState('');
+
+  const submit = async (val) => {
+    if (!val.trim()) {
+      setStatus('idle');
+      return;
+    }
+    const cleanTicker = val.trim().toUpperCase();
+    setTicker(cleanTicker);
+    setStatus('loading');
+    
+    try {
+      const response = await fetch(`https://ares-backend-fwr0.onrender.com/api/altcoin?ticker=${cleanTicker}`);
+      if (!response.ok) throw new Error('Fetch failed');
+      const json = await response.json();
+      const targetKey = `${cleanTicker}_Kill_Zone`;
+      setTarget(json[targetKey] || 'NOT FOUND');
+      setStatus('complete');
+    } catch (err) {
+      console.error(err);
+      setTarget('ERROR');
+      setStatus('complete');
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      submit(inputValue);
+    } else if (e.key === 'Escape') {
+      setStatus('idle');
+      setInputValue('');
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center p-4 border border-white/5 rounded-xl bg-white/5 h-24 relative group">
+      <div className="text-gray-500 text-[10px] uppercase tracking-widest mb-2">
+        Slot {id} {ticker && status === 'complete' ? `- ${ticker}` : ''}
+      </div>
+      
+      {!isProUser ? (
+        <div className="font-mono text-xl font-bold text-white tracking-tight">---</div>
+      ) : status === 'idle' ? (
+        <div 
+          onClick={() => setStatus('input')}
+          className="font-sans text-sm text-gray-400 hover:text-white cursor-pointer transition-colors">
+          Select Asset +
+        </div>
+      ) : status === 'input' ? (
+        <input 
+          autoFocus
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          placeholder="TICKER"
+          className="bg-slate-800 text-white font-sans text-sm text-center border border-blue-500/50 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 rounded px-2 py-1 outline-none w-24 placeholder-gray-600 transition-all shadow-[0_0_10px_rgba(59,130,246,0.3)]"
+          onBlur={() => submit(inputValue)}
+          onKeyDown={handleKeyDown}
+        />
+      ) : status === 'loading' ? (
+        <div className="font-mono text-[10px] text-blue-400 animate-pulse tracking-widest">
+          SCANNING...
+        </div>
+      ) : (
+        <div 
+          onClick={() => { setStatus('input'); setInputValue(''); }}
+          className="font-mono text-xl font-bold text-white tracking-tight shadow-purple-500/20 drop-shadow-[0_0_15px_rgba(168,85,247,0.4)] cursor-pointer hover:opacity-80 transition-opacity">
+          {target}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const Dashboard = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -193,21 +271,11 @@ const Dashboard = () => {
                       <Target size={20} strokeWidth={1.5} />
                       <h2 className="font-sans font-semibold text-xs tracking-[0.2em] uppercase">Custom Altcoin Radar</h2>
                     </div>
-                    <div className="bg-purple-500/10 border border-purple-500/30 px-2 py-1 rounded text-[9px] font-sans font-bold text-purple-400 tracking-widest uppercase shadow-[0_0_10px_rgba(168,85,247,0.2)] animate-pulse">
-                      In Development
-                    </div>
                   </div>
                   
                   <div className={`grid grid-cols-1 sm:grid-cols-3 gap-4 transition-all duration-300 ${!isProUser ? 'blur-md select-none opacity-50' : ''}`}>
                     {[1, 2, 3].map(i => (
-                      <div key={i} className="flex flex-col items-center justify-center p-4 border border-white/5 rounded-xl bg-white/5">
-                        <div className="text-gray-500 text-[10px] uppercase tracking-widest mb-2">Slot {i}</div>
-                        {isProUser ? (
-                          <div className="font-sans text-sm text-gray-500 opacity-50 cursor-not-allowed">Select Asset +</div>
-                        ) : (
-                          <div className="font-mono text-xl font-bold text-white tracking-tight">---</div>
-                        )}
-                      </div>
+                      <AltcoinSlot key={i} id={i} isProUser={isProUser} />
                     ))}
                   </div>
 

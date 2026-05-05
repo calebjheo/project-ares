@@ -102,6 +102,81 @@ async function sendToGemini(payload) {
         throw error;
     }
 }
+// Function to fetch Altcoin Liquidation Screenshot
+async function getAltcoinData(ticker) {
+    console.log(`\n[+] Initiating scrape for ${ticker}...`);
+    let browser;
+    try {
+        browser = await puppeteer.launch({
+            headless: "new",
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        });
+        
+        const page = await browser.newPage();
+        const url = `https://www.coinglass.com/pro/liquidation/${ticker}`;
+        console.log(`[+] Navigating to: ${url}`);
+        
+        await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        
+        const screenshotBase64 = await page.screenshot({ encoding: 'base64' });
+        console.log(`[+] Screenshot captured successfully for ${ticker}.`);
+        
+        return screenshotBase64;
+    } catch (error) {
+        console.error(`[-] Error scraping data for ${ticker}:`, error.message);
+        return null;
+    } finally {
+        if (browser) {
+            await browser.close();
+        }
+    }
+}
+
+// Function to analyze Altcoin Heatmap via Gemini
+async function analyzeAltcoinHeatmap(ticker, base64Image) {
+    if (!base64Image) {
+        throw new Error('Screenshot failed.');
+    }
+
+    console.log(`[+] Sending ${ticker} screenshot to Gemini 1.5 Pro for analysis...`);
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+        throw new Error('GEMINI_API_KEY is not set in environment variables');
+    }
+
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${apiKey}`;
+
+    const requestBody = {
+        contents: [
+            {
+                role: 'user',
+                parts: [
+                    {
+                        text: `Analyze this liquidation heatmap for ${ticker}. Output ONLY a valid JSON object with a single key: "${ticker}_Kill_Zone" and the exact price target.`
+                    },
+                    {
+                        inline_data: {
+                            mime_type: "image/png",
+                            data: base64Image
+                        }
+                    }
+                ]
+            }
+        ],
+        generationConfig: {
+            temperature: 0.1
+        }
+    };
+
+    const response = await axios.post(apiUrl, requestBody, {
+        headers: { 'Content-Type': 'application/json' }
+    });
+    
+    let responseText = response.data.candidates[0].content.parts[0].text;
+    responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+    return JSON.parse(responseText);
+}
 
 // Express Server Setup
 const app = express();
@@ -143,6 +218,28 @@ app.get('/api/risk', async (req, res) => {
     } catch (error) {
         console.error('Error handling /api/risk request:', error);
         res.status(500).json({ error: 'Internal server error while evaluating risk.' });
+    }
+});
+
+// Dedicated Endpoint for Custom Altcoin Radar
+app.get('/api/altcoin', async (req, res) => {
+    const ticker = req.query.ticker;
+    if (!ticker) {
+        return res.status(400).json({ error: 'Ticker parameter is required.' });
+    }
+    
+    console.log(`API Request: Fetching isolated risk target for ${ticker}...`);
+    try {
+        const screenshot = await getAltcoinData(ticker);
+        if (!screenshot) {
+            return res.status(500).json({ error: 'Failed to scrape chart data from Coinglass.' });
+        }
+        
+        const result = await analyzeAltcoinHeatmap(ticker, screenshot);
+        res.json(result);
+    } catch (error) {
+        console.error(`Error handling /api/altcoin request for ${ticker}:`, error.response ? error.response.data : error.message);
+        res.status(500).json({ error: 'Internal server error while analyzing altcoin targets.' });
     }
 });
 
