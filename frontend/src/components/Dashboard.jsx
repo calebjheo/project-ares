@@ -29,7 +29,12 @@ const AltcoinSlot = ({ id, isProUser }) => {
     
     try {
       const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
-      const response = await fetch(`${baseUrl}/api/altcoin?ticker=${cleanTicker}`);
+      const token = localStorage.getItem('ares_jwt_token');
+      const response = await fetch(`${baseUrl}/api/altcoin?ticker=${cleanTicker}`, {
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : ''
+        }
+      });
       if (!response.ok) throw new Error('Fetch failed');
       const json = await response.json();
       setTargetData({
@@ -156,20 +161,38 @@ const DashboardContent = () => {
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const [isProUser, setIsProUser] = useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('ares_pro_status') === 'active';
+      return !!localStorage.getItem('ares_jwt_token');
     }
     return false;
   });
   const [lastSweep, setLastSweep] = useState('');
 
   useEffect(() => {
-    // MVP Auth Logic: Check URL for success parameter from Stripe
+    // JWT Stateless Auth Logic: Verify Stripe session
     const params = new URLSearchParams(window.location.search);
-    if (params.get('success') === 'true') {
-      localStorage.setItem('ares_pro_status', 'active');
-      setIsProUser(true);
-      // Clean URL silently
-      window.history.replaceState(null, '', window.location.pathname);
+    const sessionId = params.get('session_id');
+    const success = params.get('success');
+
+    if (success === 'true' && sessionId) {
+      const verifySession = async () => {
+        try {
+          const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+          const response = await fetch(`${baseUrl}/api/verify-session?session_id=${sessionId}`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.token) {
+              localStorage.setItem('ares_jwt_token', data.token);
+              setIsProUser(true);
+            }
+          }
+        } catch (err) {
+          console.error('Session verification failed:', err);
+        } finally {
+          // Clean URL silently
+          window.history.replaceState(null, '', window.location.pathname);
+        }
+      };
+      verifySession();
     }
   }, []);
 

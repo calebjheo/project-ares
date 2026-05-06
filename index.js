@@ -3,6 +3,9 @@ const axios = require('axios');
 const express = require('express');
 const cors = require('cors');
 const puppeteer = require('puppeteer');
+const rateLimit = require('express-rate-limit');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const jwt = require('jsonwebtoken');
 
 // Function to fetch BTC Price and Fear & Greed Index
 async function fetchCryptoData() {
@@ -115,7 +118,57 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-app.get('/api/risk', async (req, res) => {
+// Rate Limiting
+const riskLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10, // Limit each IP to 10 requests per windowMs
+    message: { error: 'Too many requests from this IP, please try again after 15 minutes.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// JWT Middleware
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Format: Bearer <token>
+
+    if (!token) {
+        return res.status(401).json({ error: 'Access denied. Pro upgrade required.' });
+    }
+
+    const secret = process.env.JWT_SECRET || 'fallback_secret_key_for_dev_only';
+    jwt.verify(token, secret, (err, user) => {
+        if (err) {
+            return res.status(403).json({ error: 'Invalid or expired token. Please sign in again.' });
+        }
+        req.user = user;
+        next();
+    });
+};
+
+// Stripe Session Verification & JWT Generation
+app.get('/api/verify-session', async (req, res) => {
+    const { session_id } = req.query;
+    if (!session_id) {
+        return res.status(400).json({ error: 'Session ID is required.' });
+    }
+
+    try {
+        const session = await stripe.checkout.sessions.retrieve(session_id);
+        if (session.payment_status === 'paid') {
+            const secret = process.env.JWT_SECRET || 'fallback_secret_key_for_dev_only';
+            const token = jwt.sign({ proStatus: 'active', sessionId: session_id }, secret, { expiresIn: '7d' });
+            return res.json({ token });
+        } else {
+            return res.status(401).json({ error: 'Payment not completed.' });
+        }
+    } catch (error) {
+        console.error('Error verifying Stripe session:', error);
+        return res.status(500).json({ error: 'Internal server error during verification.' });
+    }
+});
+
+app.get('/api/risk', riskLimiter, async (req, res) => {
     const lang = req.query.lang || 'EN';
     console.log(`API Request: Fetching risk assessment data for lang: ${lang}...`);
     try {
@@ -198,7 +251,7 @@ Do not include markdown.`
     }
 }
 
-app.get('/api/altcoin', async (req, res) => {
+app.get('/api/altcoin', authenticateToken, async (req, res) => {
     const ticker = req.query.ticker?.toUpperCase();
     if (!ticker) {
         return res.status(400).json({ error: 'Ticker is required' });
