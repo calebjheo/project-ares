@@ -251,7 +251,7 @@ Do not include markdown.`
     }
 }
 
-app.get('/api/altcoin', authenticateToken, async (req, res) => {
+app.get('/api/altcoin', async (req, res) => {
     const ticker = req.query.ticker?.toUpperCase();
     if (!ticker) {
         return res.status(400).json({ error: 'Ticker is required' });
