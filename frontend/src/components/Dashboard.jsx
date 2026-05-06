@@ -428,7 +428,7 @@ const DashboardContent = () => {
           {t('disclaimer')}
         </p>
         <p className="font-sans text-[9px] sm:text-[10px] md:text-xs text-gray-500 uppercase tracking-widest mt-2 max-w-5xl mx-auto">
-          {t('rightsReserved')} | <button onClick={() => setIsTermsOpen(true)} className="hover:text-gray-300 transition-colors">{t('termsOfService')}</button> | <button onClick={() => setIsPrivacyOpen(true)} className="hover:text-gray-300 transition-colors">{t('privacyPolicy')}</button>
+          {t('rightsReserved')} | <button onClick={() => setIsTermsOpen(true)} className="hover:text-gray-300 transition-colors">{t('termsOfService')}</button> | <button onClick={() => setIsPrivacyOpen(true)} className="hover:text-gray-300 transition-colors">{t('privacyPolicy')}</button> | <a href="[PASTE YOUR STRIPE PORTAL LINK HERE]" target="_blank" rel="noopener noreferrer" className="hover:text-gray-300 transition-colors">{t('manageSubscription') || 'Manage Subscription'}</a>
         </p>
       </footer>
 

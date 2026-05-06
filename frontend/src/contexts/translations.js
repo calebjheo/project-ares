@@ -2,6 +2,7 @@ export const translations = {
   EN: {
     // Dashboard & General
     upgradeToPro: "START 7-DAY FREE TRIAL",
+    manageSubscription: "Manage Subscription",
     systemProtocol: "System Protocol",
     unlockInstitutional: "Unlock Institutional Flow Data & Custom Altcoin Radar",
     iAgree: "I agree to the Terms of Service & understand this is 'As-Is' educational data.",
