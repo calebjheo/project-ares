@@ -157,13 +157,13 @@ async function sendToGemini(payload, lang = 'EN') {
         });
     }
 
-    const requestBody = {
-        contents: [
-            {
-                role: 'user',
-                parts: [
-                    {
-                        text: `You are a machine API. You must output ONLY valid JSON. The 'Market_Posture' field MUST be exactly one English word (e.g., AGGRESSIVE, NEUTRAL, DEFENSIVE, DANGER). The 'Actionable_Intel' field MUST include specific ETF inflow/outflow numbers and coin tickers. 
+        const requestBody = {
+            contents: [
+                {
+                    role: 'user',
+                    parts: [
+                        {
+                            text: `You are a machine API. You must output ONLY valid JSON. The 'Market_Posture' field MUST be exactly one English word (e.g., AGGRESSIVE, NEUTRAL, DEFENSIVE, DANGER). The 'Actionable_Intel' field MUST include specific ETF inflow/outflow numbers and coin tickers. 
 IMPORTANT: The 'Actionable_Intel' field MUST be written in the ${lang} language.
 
 ${failureContext}
@@ -190,12 +190,16 @@ Here is the EXACT JSON format you must follow:\n` +
                               `CRITICAL DIRECTIVES:\n` +
                               `1. "Corporate_Sentiment": You MUST analyze the COIN and HOOD stock prices. Output a 1-sentence summary of their performance indicating if retail is exhausted. DO NOT OMIT THIS KEY.\n` +
                               `2. "BTC_Kill_Zone" / "ETH_Kill_Zone" / "SOL_Kill_Zone": Analyze the attached Coinglass liquidation heatmaps. Find the heaviest liquidation clusters STRICTLY BELOW the live anchor prices. IF THE IMAGE IS A CLOUDFLARE CHALLENGE PAGE OR MISSING, YOU MUST OUTPUT "RADAR JAMMED". DO NOT COPY THE EXAMPLE FORMATTING NUMBERS ($74,800, etc) UNDER ANY CIRCUMSTANCES.`
-                    },
-                    ...heatmapParts
-                ]
+                        },
+                        ...heatmapParts
+                    ]
+                }
+            ],
+            generationConfig: {
+                temperature: 0.2,
+                responseMimeType: "application/json"
             }
-        ]
-    };
+        };
 
     try {
         const response = await axios.post(apiUrl, requestBody, {
@@ -353,14 +357,25 @@ app.get('/api/risk', riskLimiter, async (req, res) => {
             try {
                 let responseText = cachedResult.candidates[0].content.parts[0].text;
                 responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-                finalJson = JSON.parse(responseText);
+                const parsed = JSON.parse(responseText);
+                
+                finalJson = {
+                    "Market_Posture": parsed.Market_Posture || "UNKNOWN",
+                    "Fear_Greed_Score": parsed.Fear_Greed_Score || sharedPayloadCache.payload.cryptoData.fearAndGreed.value || "50",
+                    "Corporate_Sentiment": parsed.Corporate_Sentiment || "RADAR JAMMED - UNABLE TO ACQUIRE CORPORATE DATA",
+                    "Net_ETF_Flow": parsed.Net_ETF_Flow || "RADAR JAMMED",
+                    "Actionable_Intel": parsed.Actionable_Intel || "Awaiting intelligence...",
+                    "BTC_Kill_Zone": parsed.BTC_Kill_Zone || "RADAR JAMMED",
+                    "ETH_Kill_Zone": parsed.ETH_Kill_Zone || "RADAR JAMMED",
+                    "SOL_Kill_Zone": parsed.SOL_Kill_Zone || "RADAR JAMMED"
+                };
             } catch(e) {
                 finalJson = {
                     "Market_Posture": "UNKNOWN",
                     "Fear_Greed_Score": sharedPayloadCache.payload.cryptoData.fearAndGreed.value || "50",
                     "Corporate_Sentiment": "RADAR JAMMED",
                     "Net_ETF_Flow": "RADAR JAMMED",
-                    "Actionable_Intel": "RADAR JAMMED - System is attempting to bypass Cloudflare constraints. Retrying secure connection...",
+                    "Actionable_Intel": "RADAR JAMMED - AI Synthesis Engine Failed to parse data.",
                     "BTC_Kill_Zone": "RADAR JAMMED - RETRYING",
                     "ETH_Kill_Zone": "RADAR JAMMED - RETRYING",
                     "SOL_Kill_Zone": "RADAR JAMMED - RETRYING"
