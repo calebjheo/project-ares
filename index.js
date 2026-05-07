@@ -45,15 +45,51 @@ async function fetchCryptoData() {
     }
 }
 
-async function scrapeFarsideETF() {
-    console.log('[MOCK] Using mock ETF flow data to bypass Cloudflare.');
-    return { btcFlow: '145.5M', ethFlow: '-50.0M' };
+async function scrapeFarsideETF(browser) {
+    if (!browser) return { rawText: 'Scrape failed due to Cloudflare.' };
+    console.log('[+] Scraping Farside ETF data via Proxy...');
+    let page;
+    try {
+        page = await browser.newPage();
+        
+        if (process.env.PROXY_API_KEY) {
+            await page.authenticate({ username: process.env.PROXY_API_KEY, password: '' });
+        }
+        
+        await page.goto('https://farside.co.uk/?p=997', { waitUntil: 'networkidle2', timeout: 30000 });
+        const text = await page.evaluate(() => document.body.innerText.substring(0, 3000));
+        return { rawText: text };
+    } catch (error) {
+        console.error('[-] Error scraping Farside:', error.message);
+        return { rawText: 'Scrape failed due to Cloudflare.' };
+    } finally {
+        if (page) await page.close().catch(() => {});
+    }
 }
 
-// Function to provide Mock Coinglass Liquidation Text
-async function getCoinglassData() {
-    console.log(`[MOCK] Using mock Coinglass liquidation data to bypass Cloudflare...`);
-    return "Liquidation Data: BTC heavy cluster at $74,800. ETH heavy cluster at $2,150. SOL heavy cluster at $71.50.";
+// Function to screenshot Coinglass Liquidation Heatmap using Puppeteer via Proxy
+async function takeCoinglassScreenshot(ticker, browser) {
+    if (!browser) return 'Scrape failed due to Cloudflare.';
+    console.log(`[+] Taking Coinglass screenshot for ${ticker} via Proxy...`);
+    let page;
+    try {
+        page = await browser.newPage();
+        
+        if (process.env.PROXY_API_KEY) {
+            await page.authenticate({ username: process.env.PROXY_API_KEY, password: '' });
+        }
+        
+        const url = `https://www.coinglass.com/pro/liquidation/${ticker}`;
+        await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        const screenshotBase64 = await page.screenshot({ encoding: 'base64' });
+        return screenshotBase64;
+    } catch (error) {
+        console.error(`[-] Error scraping Coinglass for ${ticker}:`, error.message);
+        return 'Scrape failed due to Cloudflare.';
+    } finally {
+        if (page) await page.close().catch(() => {});
+    }
 }
 
 // Function to send data to Gemini 1.5-flash API
@@ -65,9 +101,14 @@ async function sendToGemini(payload, lang = 'EN') {
 
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
-    const hasFailedScrape = false;
+    const hasFailedScrape = 
+        payload.etfFlow.rawText.includes('Cloudflare') || 
+        payload.screenshots.some(s => s === 'Scrape failed due to Cloudflare.');
 
     let failureContext = '';
+    if (hasFailedScrape) {
+        failureContext = 'If the liquidation data is missing or failed, you MUST STILL OUTPUT VALID JSON. Set the values of "BTC_Kill_Zone", "ETH_Kill_Zone", and "SOL_Kill_Zone" to "RADAR JAMMED - RETRYING". Set "Net_ETF_Flow" to "RADAR JAMMED". Do not guess or hallucinate numerical targets.\n';
+    }
     
     let heatmapParts = [];
     if (payload.screenshots && payload.screenshots.length > 0) {
@@ -104,10 +145,8 @@ Here is the EXACT JSON format you must follow:\n` +
                               `ETH Price: $${payload.cryptoData.ethPrice}\n` +
                               `SOL Price: $${payload.cryptoData.solPrice}\n` +
                               `Fear & Greed Index: ${payload.cryptoData.fearAndGreed.value} (${payload.cryptoData.fearAndGreed.classification})\n` +
-                              `BTC ETF Net Flow: ${payload.etfFlow.btcFlow}\n` +
-                              `ETH ETF Net Flow: ${payload.etfFlow.ethFlow}\n\n` +
-                              `${payload.heatmapText || ''}\n\n` +
-                              `Analyze the provided liquidation data and find the heaviest liquidation clusters STRICTLY BELOW the live anchor prices.`
+                              `Raw Farside ETF Data:\n${payload.etfFlow.rawText}\n\n` +
+                              `Analyze the attached Coinglass liquidation heatmaps (if provided) and find the heaviest liquidation clusters STRICTLY BELOW the live anchor prices.`
                     },
                     ...heatmapParts
                 ]
@@ -208,19 +247,36 @@ app.get('/api/risk', riskLimiter, async (req, res) => {
         
         // If the shared payload is missing or expired, run the scrapers
         if (!payload || (now - sharedPayloadCache.timestamp >= CACHE_DURATION)) {
-            console.log('[CACHE MISS] Fetching MVP mock data and live prices concurrently...');
+            console.log('[CACHE MISS] Launching single browser instance with Proxy to bypass Cloudflare...');
             
-            const [cryptoData, etfFlow, heatmapText] = await Promise.all([
+            let browser = null;
+            try {
+                const proxyUrl = process.env.PROXY_URL || 'http://proxy.scrapingbee.com:8886';
+                const args = ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'];
+                
+                if (process.env.PROXY_API_KEY) {
+                    args.push(`--proxy-server=${proxyUrl}`);
+                }
+                
+                browser = await puppeteer.launch({ headless: "new", args });
+            } catch (e) {
+                console.error("Failed to launch Puppeteer completely:", e.message);
+            }
+            
+            const [cryptoData, etfFlow, btcScreenshot, ethScreenshot, solScreenshot] = await Promise.all([
                 fetchCryptoData(),
-                scrapeFarsideETF(),
-                getCoinglassData()
+                scrapeFarsideETF(browser),
+                takeCoinglassScreenshot('BTC', browser),
+                takeCoinglassScreenshot('ETH', browser),
+                takeCoinglassScreenshot('SOL', browser)
             ]);
+            
+            if (browser) await browser.close().catch(() => {});
             
             payload = {
                 cryptoData,
                 etfFlow,
-                screenshots: [],
-                heatmapText
+                screenshots: [btcScreenshot, ethScreenshot, solScreenshot]
             };
             
             sharedPayloadCache = { payload, timestamp: now };
@@ -364,7 +420,7 @@ if (require.main === module) {
 module.exports = {
     fetchCryptoData,
     scrapeFarsideETF,
-    getCoinglassData,
+    takeCoinglassScreenshot,
     sendToGemini,
     app
 };
