@@ -8,7 +8,6 @@ puppeteer.use(StealthPlugin());
 const rateLimit = require('express-rate-limit');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const jwt = require('jsonwebtoken');
-const yahooFinance = require('yahoo-finance2').default;
 
 // Function to fetch BTC Price and Fear & Greed Index
 async function fetchCryptoData() {
@@ -52,6 +51,8 @@ async function fetchCryptoData() {
 async function fetchCorporateData() {
     try {
         console.log('[+] Fetching corporate broker data (COIN, HOOD)...');
+        // Dynamically import ESM package
+        const yahooFinance = await import('yahoo-finance2').then(m => m.default);
         const [coinData, hoodData] = await Promise.all([
             yahooFinance.quote('COIN'),
             yahooFinance.quote('HOOD')
