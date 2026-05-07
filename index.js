@@ -2,7 +2,9 @@ require('dotenv').config();
 const axios = require('axios');
 const express = require('express');
 const cors = require('cors');
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-extra');
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+puppeteer.use(StealthPlugin());
 const rateLimit = require('express-rate-limit');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const jwt = require('jsonwebtoken');
@@ -132,12 +134,18 @@ async function sendToGemini(payload, lang = 'EN') {
 
     const hasFailedScrape = 
         payload.etfFlow.rawText.includes('PROXY ERROR') || 
+        payload.etfFlow.rawText.includes('Cloudflare') ||
+        payload.etfFlow.rawText.includes('security') ||
+        payload.etfFlow.rawText.includes('Just a moment') ||
         payload.screenshots.some(s => s && s.includes('PROXY ERROR'));
 
     let failureContext = '';
     if (hasFailedScrape) {
-        const errorMessage = payload.etfFlow.rawText.includes('PROXY ERROR') ? payload.etfFlow.rawText : payload.screenshots.find(s => s && s.includes('PROXY ERROR'));
-        failureContext = `The proxy scraper failed with the following error: "${errorMessage}". You MUST STILL OUTPUT VALID JSON. Set the values of "BTC_Kill_Zone", "ETH_Kill_Zone", and "SOL_Kill_Zone" to "RADAR JAMMED - RETRYING". Set "Net_ETF_Flow" to "RADAR JAMMED". In the "Actionable_Intel" field, you MUST explain that the radar is jammed specifically because of this proxy error: ${errorMessage}. Do not guess or hallucinate numerical targets.\n`;
+        let errorMessage = 'Cloudflare Anti-Bot Protection Blocked the Request';
+        if (payload.etfFlow.rawText.includes('PROXY ERROR')) errorMessage = payload.etfFlow.rawText;
+        if (payload.screenshots.find(s => s && s.includes('PROXY ERROR'))) errorMessage = payload.screenshots.find(s => s && s.includes('PROXY ERROR'));
+        
+        failureContext = `The scraper failed to fetch live data with the following error: "${errorMessage}". You MUST STILL OUTPUT VALID JSON. Set the values of "BTC_Kill_Zone", "ETH_Kill_Zone", and "SOL_Kill_Zone" to "RADAR JAMMED - RETRYING". Set "Net_ETF_Flow" to "RADAR JAMMED". In the "Actionable_Intel" field, you MUST explain that the radar is jammed because of this error: ${errorMessage}. DO NOT copy the numbers from the example structure. DO NOT hallucinate inflows or outflows. Say explicitly that data is jammed.\n`;
     }
     
     let heatmapParts = [];
