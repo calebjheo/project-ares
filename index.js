@@ -145,7 +145,7 @@ async function sendToGemini(payload, lang = 'EN') {
         if (payload.etfFlow.rawText.includes('PROXY ERROR')) errorMessage = payload.etfFlow.rawText;
         if (payload.screenshots.find(s => s && s.includes('PROXY ERROR'))) errorMessage = payload.screenshots.find(s => s && s.includes('PROXY ERROR'));
         
-        failureContext = `The scraper failed to fetch live data with the following error: "${errorMessage}". You MUST STILL OUTPUT VALID JSON. Set the values of "BTC_Kill_Zone", "ETH_Kill_Zone", and "SOL_Kill_Zone" to "RADAR JAMMED - RETRYING". Set "Net_ETF_Flow" to "RADAR JAMMED". In the "Actionable_Intel" field, you MUST explain that the radar is jammed because of this error: ${errorMessage}. DO NOT copy the numbers from the example structure. DO NOT hallucinate inflows or outflows. Say explicitly that data is jammed.\n`;
+        failureContext = `The scraper failed to fetch live data with the following error: "${errorMessage}". You MUST STILL OUTPUT VALID JSON. Set the values of "BTC_Kill_Zone", "ETH_Kill_Zone", and "SOL_Kill_Zone" to "RADAR JAMMED - RETRYING". Set "Net_ETF_Flow" to "RADAR JAMMED". Set "Corporate_Sentiment" to "RADAR JAMMED". In the "Actionable_Intel" field, you MUST explain that the radar is jammed because of this error: ${errorMessage}. DO NOT copy the numbers from the example structure. DO NOT hallucinate inflows or outflows. Say explicitly that data is jammed.\n`;
     }
     
     let heatmapParts = [];
@@ -270,10 +270,67 @@ app.get('/api/verify-session', async (req, res) => {
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 let sharedPayloadCache = { payload: null, timestamp: 0 };
 let finalResponseCache = {};
+let isSweeping = false;
+
+// Background Cron Engine
+async function runBackgroundSweep() {
+    if (isSweeping) return;
+    isSweeping = true;
+    console.log('[+] Starting background data sweep...');
+    
+    let browser;
+    try {
+        const proxyUrl = process.env.PROXY_URL || 'http://proxy.scrapingbee.com:8886';
+        const args = ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'];
+        if (process.env.PROXY_API_KEY) {
+            args.push(`--proxy-server=${proxyUrl}`);
+        }
+
+        try {
+            browser = await puppeteer.launch({
+                headless: "new",
+                args: args,
+                ignoreHTTPSErrors: true
+            });
+        } catch (e) {
+            console.error("[-] Failed to launch Puppeteer completely:", e.message);
+        }
+        
+        const [cryptoData, etfFlow, btcScreenshot, ethScreenshot, solScreenshot, corpData] = await Promise.all([
+            fetchCryptoData(),
+            scrapeFarsideETF(browser),
+            takeCoinglassScreenshot('BTC', browser),
+            takeCoinglassScreenshot('ETH', browser),
+            takeCoinglassScreenshot('SOL', browser),
+            fetchCorporateData()
+        ]);
+        
+        if (browser) await browser.close().catch(() => {});
+        
+        const payload = {
+            cryptoData,
+            etfFlow,
+            screenshots: [btcScreenshot, ethScreenshot, solScreenshot],
+            corpData
+        };
+        
+        sharedPayloadCache = { payload, timestamp: Date.now() };
+        finalResponseCache = {}; // Clear translation cache
+        console.log('[+] Background sweep completed and cached.');
+    } catch (e) {
+        console.error('[-] Error in background sweep:', e);
+        if (browser) await browser.close().catch(() => {});
+    } finally {
+        isSweeping = false;
+    }
+}
+
+// Start sweeping immediately, then every 5 minutes
+runBackgroundSweep();
+setInterval(runBackgroundSweep, 300000);
 
 app.get('/api/risk', riskLimiter, async (req, res) => {
     const lang = req.query.lang || 'EN';
-    console.log(`API Request: Fetching risk assessment data for lang: ${lang}...`);
     
     const now = Date.now();
     
@@ -282,88 +339,54 @@ app.get('/api/risk', riskLimiter, async (req, res) => {
         console.log(`[CACHE HIT] Returning live dashboard data for ${lang} from memory.`);
         return res.json(finalResponseCache[lang].data);
     }
-
-    try {
-        let payload = sharedPayloadCache.payload;
-        
-        // If the shared payload is missing or expired, run the scrapers
-        if (!payload || (now - sharedPayloadCache.timestamp >= CACHE_DURATION)) {
-            console.log('[CACHE MISS] Launching single browser instance with Proxy to bypass Cloudflare...');
+    
+    // If we have a payload but no translation yet, generate translation instantly
+    if (sharedPayloadCache.payload) {
+        try {
+            console.log(`[+] Translating payload instantly for ${lang}`);
+            const cachedResult = await sendToGemini(sharedPayloadCache.payload, lang);
             
-            let browser = null;
+            // Validate JSON
+            let finalJson;
             try {
-                const proxyUrl = process.env.PROXY_URL || 'http://proxy.scrapingbee.com:8886';
-                const args = ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'];
-                
-                if (process.env.PROXY_API_KEY) {
-                    args.push(`--proxy-server=${proxyUrl}`);
-                }
-                
-                browser = await puppeteer.launch({ headless: "new", args });
-            } catch (e) {
-                console.error("Failed to launch Puppeteer completely:", e.message);
+                let responseText = cachedResult.candidates[0].content.parts[0].text;
+                responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+                finalJson = JSON.parse(responseText);
+            } catch(e) {
+                finalJson = {
+                    "Market_Posture": "UNKNOWN",
+                    "Fear_Greed_Score": sharedPayloadCache.payload.cryptoData.fearAndGreed.value || "50",
+                    "Corporate_Sentiment": "RADAR JAMMED",
+                    "Net_ETF_Flow": "RADAR JAMMED",
+                    "Actionable_Intel": "RADAR JAMMED - System is attempting to bypass Cloudflare constraints. Retrying secure connection...",
+                    "BTC_Kill_Zone": "RADAR JAMMED - RETRYING",
+                    "ETH_Kill_Zone": "RADAR JAMMED - RETRYING",
+                    "SOL_Kill_Zone": "RADAR JAMMED - RETRYING"
+                };
             }
             
-            const [cryptoData, etfFlow, btcScreenshot, ethScreenshot, solScreenshot, corpData] = await Promise.all([
-                fetchCryptoData(),
-                scrapeFarsideETF(browser),
-                takeCoinglassScreenshot('BTC', browser),
-                takeCoinglassScreenshot('ETH', browser),
-                takeCoinglassScreenshot('SOL', browser),
-                fetchCorporateData()
-            ]);
-            
-            if (browser) await browser.close().catch(() => {});
-            
-            payload = {
-                cryptoData,
-                etfFlow,
-                screenshots: [btcScreenshot, ethScreenshot, solScreenshot],
-                corpData
+            finalResponseCache[lang] = {
+                data: finalJson,
+                timestamp: now
             };
             
-            sharedPayloadCache = { payload, timestamp: now };
-            // Invalidate the final responses since the underlying payload is fresh
-            finalResponseCache = {}; 
-        } else {
-            console.log('[CACHE HIT] Payload valid. Translating to new language...');
+            return res.json(finalJson);
+        } catch(e) {
+            console.error(e);
+            return res.status(500).json({ error: 'Failed to process risk assessment' });
         }
-
-        console.log(`Sending payload to Gemini 1.5-flash API (${lang})...`);
-        const geminiResponse = await sendToGemini(payload, lang);
-        let responseText = geminiResponse.candidates[0].content.parts[0].text;
-        
-        // Clean markdown block formatting if present
-        responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-        
-        let finalJson;
-        try {
-            finalJson = JSON.parse(responseText);
-        } catch (parseError) {
-            console.error('Failed to parse Gemini output as JSON:', responseText);
-            // Fallback to ensure the dashboard doesn't crash if Gemini outputs plain text
-            finalJson = {
-                "Market_Posture": "UNKNOWN",
-                "Fear_Greed_Score": payload.cryptoData.fearAndGreed.value || "50",
-                "Corporate_Sentiment": "RADAR JAMMED",
-                "Net_ETF_Flow": "RADAR JAMMED",
-                "Actionable_Intel": "RADAR JAMMED - System is attempting to bypass Cloudflare constraints. Retrying secure connection...",
-                "BTC_Kill_Zone": "RADAR JAMMED - RETRYING",
-                "ETH_Kill_Zone": "RADAR JAMMED - RETRYING",
-                "SOL_Kill_Zone": "RADAR JAMMED - RETRYING"
-            };
-        }
-        
-        // Update the language-specific final cache
-        finalResponseCache[lang] = {
-            data: finalJson,
-            timestamp: now
-        };
-
-        res.json(finalJson);
-    } catch (error) {
-        console.error('Error handling /api/risk request:', error);
-        res.status(500).json({ error: 'Internal server error while evaluating risk.' });
+    } else {
+        console.log('[-] Serving booting fallback payload');
+        return res.json({
+            "Market_Posture": "UNKNOWN",
+            "Fear_Greed_Score": "50",
+            "Corporate_Sentiment": "SYSTEM BOOTING",
+            "Net_ETF_Flow": "SYSTEM BOOTING",
+            "Actionable_Intel": "The Project ARES tactical servers are currently booting up and acquiring initial radar sweeps. Please hold the line and refresh in 60 seconds.",
+            "BTC_Kill_Zone": "ACQUIRING...",
+            "ETH_Kill_Zone": "ACQUIRING...",
+            "SOL_Kill_Zone": "ACQUIRING..."
+        });
     }
 });
 
