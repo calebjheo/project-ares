@@ -364,7 +364,7 @@ if (require.main === module) {
 module.exports = {
     fetchCryptoData,
     scrapeFarsideETF,
-    takeCoinglassScreenshot,
+    getCoinglassData,
     sendToGemini,
     app
 };
