@@ -6,6 +6,7 @@ const puppeteer = require('puppeteer');
 const rateLimit = require('express-rate-limit');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const jwt = require('jsonwebtoken');
+const yahooFinance = require('yahoo-finance2').default;
 
 // Function to fetch BTC Price and Fear & Greed Index
 async function fetchCryptoData() {
@@ -41,6 +42,34 @@ async function fetchCryptoData() {
             ethPrice: 3400,
             solPrice: 150,
             fearAndGreed: { value: 75, classification: "Greed" }
+        };
+    }
+}
+
+// Function to fetch Corporate Retail Broker Data
+async function fetchCorporateData() {
+    try {
+        console.log('[+] Fetching corporate broker data (COIN, HOOD)...');
+        const [coinData, hoodData] = await Promise.all([
+            yahooFinance.quote('COIN'),
+            yahooFinance.quote('HOOD')
+        ]);
+        
+        return {
+            COIN: {
+                price: coinData.regularMarketPrice,
+                changePercent: coinData.regularMarketChangePercent
+            },
+            HOOD: {
+                price: hoodData.regularMarketPrice,
+                changePercent: hoodData.regularMarketChangePercent
+            }
+        };
+    } catch (error) {
+        console.error('[-] Error fetching corporate data:', error.message);
+        return {
+            COIN: { price: '0', changePercent: '0' },
+            HOOD: { price: '0', changePercent: '0' }
         };
     }
 }
@@ -135,6 +164,7 @@ Here is the EXACT JSON format you must follow:\n` +
                               `{\n` +
                               `"Market_Posture": "DEFENSIVE",\n` +
                               `"Fear_Greed_Score": "78",\n` +
+                              `"Corporate_Sentiment": "Coinbase and Robinhood are bleeding down 4%, indicating total retail exhaustion.",\n` +
                               `"Net_ETF_Flow": "+$285M",\n` +
                               `"Actionable_Intel": "[Translate this intel into ${lang}]: BTC ETFs saw $335M inflows led by BlackRock, while ETH ETFs saw $50M outflows. Retail sentiment is euphoric at 78. Prepare for a liquidity flush.",\n` +
                               `"BTC_Kill_Zone": "BTC: $74,800",\n` +
@@ -146,6 +176,8 @@ Here is the EXACT JSON format you must follow:\n` +
                               `ETH Price: $${payload.cryptoData.ethPrice}\n` +
                               `SOL Price: $${payload.cryptoData.solPrice}\n` +
                               `Fear & Greed Index: ${payload.cryptoData.fearAndGreed.value} (${payload.cryptoData.fearAndGreed.classification})\n` +
+                              `COIN Stock: $${payload.corpData.COIN.price} (${payload.corpData.COIN.changePercent}%)\n` +
+                              `HOOD Stock: $${payload.corpData.HOOD.price} (${payload.corpData.HOOD.changePercent}%)\n` +
                               `Raw Farside ETF Data:\n${payload.etfFlow.rawText}\n\n` +
                               `Analyze the attached Coinglass liquidation heatmaps (if provided) and find the heaviest liquidation clusters STRICTLY BELOW the live anchor prices.`
                     },
@@ -264,12 +296,13 @@ app.get('/api/risk', riskLimiter, async (req, res) => {
                 console.error("Failed to launch Puppeteer completely:", e.message);
             }
             
-            const [cryptoData, etfFlow, btcScreenshot, ethScreenshot, solScreenshot] = await Promise.all([
+            const [cryptoData, etfFlow, btcScreenshot, ethScreenshot, solScreenshot, corpData] = await Promise.all([
                 fetchCryptoData(),
                 scrapeFarsideETF(browser),
                 takeCoinglassScreenshot('BTC', browser),
                 takeCoinglassScreenshot('ETH', browser),
-                takeCoinglassScreenshot('SOL', browser)
+                takeCoinglassScreenshot('SOL', browser),
+                fetchCorporateData()
             ]);
             
             if (browser) await browser.close().catch(() => {});
@@ -277,7 +310,8 @@ app.get('/api/risk', riskLimiter, async (req, res) => {
             payload = {
                 cryptoData,
                 etfFlow,
-                screenshots: [btcScreenshot, ethScreenshot, solScreenshot]
+                screenshots: [btcScreenshot, ethScreenshot, solScreenshot],
+                corpData
             };
             
             sharedPayloadCache = { payload, timestamp: now };
@@ -303,6 +337,7 @@ app.get('/api/risk', riskLimiter, async (req, res) => {
             finalJson = {
                 "Market_Posture": "UNKNOWN",
                 "Fear_Greed_Score": payload.cryptoData.fearAndGreed.value || "50",
+                "Corporate_Sentiment": "RADAR JAMMED",
                 "Net_ETF_Flow": "RADAR JAMMED",
                 "Actionable_Intel": "RADAR JAMMED - System is attempting to bypass Cloudflare constraints. Retrying secure connection...",
                 "BTC_Kill_Zone": "RADAR JAMMED - RETRYING",
@@ -420,6 +455,7 @@ if (require.main === module) {
 
 module.exports = {
     fetchCryptoData,
+    fetchCorporateData,
     scrapeFarsideETF,
     takeCoinglassScreenshot,
     sendToGemini,

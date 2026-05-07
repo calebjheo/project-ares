@@ -8,7 +8,7 @@ import UpgradeModal from './UpgradeModal';
 import TermsModal from './TermsModal';
 import PrivacyModal from './PrivacyModal';
 import AresLogo from './AresLogo';
-import { Info, BookText, Target, Lock, ShieldAlert } from 'lucide-react';
+import { Info, BookText, Target, Lock, ShieldAlert, Activity } from 'lucide-react';
 import { LanguageProvider, useLanguage } from '../contexts/LanguageContext';
 
 const AltcoinSlot = ({ id, isProUser }) => {
@@ -139,6 +139,23 @@ const LiveMetricsHUD = ({ fearGreed, etfFlow, t }) => (
       <div className="absolute inset-0 bg-gradient-to-t from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
       <div className="text-[9px] md:text-[10px] text-gray-500 tracking-widest uppercase mb-2 font-bold z-10">{t('netEtfFlowTitle')}</div>
       <div className="font-mono text-2xl md:text-3xl font-bold text-blue-400 tracking-tight drop-shadow-[0_0_15px_rgba(59,130,246,0.4)] z-10">{etfFlow || '--'}</div>
+    </div>
+  </div>
+);
+
+const CorporateSentiment = ({ sentiment, t }) => (
+  <div className="bg-slate-900/60 border border-white/10 rounded-2xl p-5 md:p-6 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] backdrop-blur-md relative overflow-hidden group">
+    <div className="absolute inset-0 bg-gradient-to-tr from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+    <div className="flex items-center gap-2 mb-3">
+      <div className="p-1.5 bg-purple-500/20 rounded-md border border-purple-500/30">
+        <Activity size={16} className="text-purple-400" />
+      </div>
+      <h3 className="font-sans font-bold text-[10px] md:text-xs text-purple-400 tracking-[0.2em] uppercase">
+        {t('retailBrokerHealth') || 'Retail Broker Health'}
+      </h3>
+    </div>
+    <div className="font-sans text-sm md:text-base text-gray-300 leading-relaxed border-l-2 border-purple-500/50 pl-4 py-1 relative z-10">
+      {sentiment || 'Scanning corporate order flows...'}
     </div>
   </div>
 );
@@ -330,6 +347,7 @@ const DashboardContent = () => {
               <div className="lg:col-span-7 flex flex-col gap-4 xl:gap-6">
                 <LiveMetricsHUD fearGreed={data?.Fear_Greed_Score} etfFlow={data?.Net_ETF_Flow} t={t} />
                 <ActionableIntel intel={data?.Actionable_Intel} />
+                <CorporateSentiment sentiment={data?.Corporate_Sentiment} t={t} />
                 <KillZoneTarget 
                   btcTarget={data?.BTC_Kill_Zone} 
                   ethTarget={data?.ETH_Kill_Zone} 
