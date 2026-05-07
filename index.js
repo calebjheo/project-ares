@@ -51,8 +51,9 @@ async function fetchCryptoData() {
 async function fetchCorporateData() {
     try {
         console.log('[+] Fetching corporate broker data (COIN, HOOD)...');
-        // Dynamically import ESM package
-        const yahooFinance = await import('yahoo-finance2').then(m => m.default);
+        // Dynamically import and instantiate ESM package
+        const YahooFinanceClass = await import('yahoo-finance2').then(m => m.default);
+        const yahooFinance = new YahooFinanceClass();
         const [coinData, hoodData] = await Promise.all([
             yahooFinance.quote('COIN'),
             yahooFinance.quote('HOOD')
