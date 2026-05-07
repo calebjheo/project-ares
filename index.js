@@ -206,12 +206,35 @@ app.get('/api/risk', riskLimiter, async (req, res) => {
 });
 
 // Altcoin Radar Logic
+async function fetchAltcoinPrice(ticker) {
+    try {
+        const cgConfig = process.env.COINGECKO_API_KEY ? {
+            headers: { 'x-cg-demo-api-key': process.env.COINGECKO_API_KEY }
+        } : {};
+        
+        const searchRes = await axios.get(`https://api.coingecko.com/api/v3/search?query=${ticker}`, cgConfig);
+        if (!searchRes.data.coins || searchRes.data.coins.length === 0) return null;
+        
+        const exactMatch = searchRes.data.coins.find(c => c.symbol.toLowerCase() === ticker.toLowerCase());
+        const coinId = exactMatch ? exactMatch.id : searchRes.data.coins[0].id;
+        
+        const priceRes = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd`, cgConfig);
+        return priceRes.data[coinId]?.usd || null;
+    } catch (error) {
+        console.error(`Error fetching live price for ${ticker}:`, error.message);
+        return null;
+    }
+}
+
 async function analyzeAltcoinHeatmap(ticker) {
     console.log(`[+] Asking Gemini 2.5 Flash to estimate Kill Zone for ${ticker}...`);
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
         throw new Error('GEMINI_API_KEY is not set in environment variables');
     }
+
+    const currentPriceRaw = await fetchAltcoinPrice(ticker);
+    const currentPrice = currentPriceRaw ? `$${currentPriceRaw}` : 'unknown';
 
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
@@ -221,16 +244,13 @@ async function analyzeAltcoinHeatmap(ticker) {
                 role: 'user',
                 parts: [
                     {
-                        text: `You are an institutional quantitative risk engine. Calculate a realistic estimated downside liquidation cluster ("Kill Zone") for the cryptocurrency ticker ${ticker} based on typical market structure and volatility. Output ONLY a valid JSON object with exactly TWO keys: 
-1. "Kill_Zone": The exact estimated price target formatted exactly like "$PRICE" (e.g. "$16.50"). Do not include the ticker name.
-2. "Threat_Level": Must be exactly one word: 'HIGH', 'ELEVATED', or 'STABLE', based on how over-leveraged you estimate the heatmap to be.
-Do not include markdown.`
+                        text: `You are a quantitative risk AI. The current live spot price of ${ticker} is ${currentPrice}. Analyze the attached Coinglass liquidation heatmap screenshot. You MUST find the heaviest liquidation cluster STRICTLY BELOW the current price of ${currentPrice}. Do not hallucinate. Do not output a target higher than the current price. Output ONLY valid JSON in this format: { "Kill_Zone": "[Price]", "Threat_Level": "[HIGH, ELEVATED, or STABLE]" }`
                     }
                 ]
             }
         ],
         generationConfig: {
-            temperature: 0.4
+            temperature: 0.1
         }
     };
 
