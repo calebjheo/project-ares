@@ -87,7 +87,7 @@ async function scrapeFarsideETF(browser) {
             await page.authenticate({ username: process.env.PROXY_API_KEY, password: '' });
         }
         
-        await page.goto('https://farside.co.uk/?p=997', { waitUntil: 'networkidle2', timeout: 60000 });
+        await page.goto('https://farside.co.uk/?p=997', { waitUntil: 'domcontentloaded', timeout: 20000 });
         const text = await page.evaluate(() => document.body.innerText.substring(0, 3000));
         return { rawText: text };
     } catch (error) {
@@ -111,8 +111,8 @@ async function takeCoinglassScreenshot(ticker, browser) {
         }
         
         const url = `https://www.coinglass.com/pro/liquidation/${ticker}`;
-        await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
+        await new Promise(resolve => setTimeout(resolve, 3000));
         const screenshotBase64 = await page.screenshot({ encoding: 'base64' });
         return screenshotBase64;
     } catch (error) {

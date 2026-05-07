@@ -117,6 +117,7 @@ export const translations = {
     // New Updates
     fearGreedTitle: "Fear & Greed",
     netEtfFlowTitle: "Net ETF Flow",
+    retailBrokerHealth: "Retail Broker Health",
     threatHighLabel: "HIGH",
     threatElevatedLabel: "ELEVATED",
     threatStableLabel: "STABLE",
@@ -261,6 +262,7 @@ export const translations = {
     // New Updates
     fearGreedTitle: "공포 및 탐욕",
     netEtfFlowTitle: "순 ETF 흐름",
+    retailBrokerHealth: "소매 브로커 건전성",
     threatHighLabel: "HIGH",
     threatElevatedLabel: "ELEVATED",
     threatStableLabel: "STABLE",
@@ -405,6 +407,7 @@ export const translations = {
     // New Updates
     fearGreedTitle: "Miedo y Codicia",
     netEtfFlowTitle: "Flujo Neto de ETF",
+    retailBrokerHealth: "Salud del Corredor Minorista",
     threatHighLabel: "ALTO",
     threatElevatedLabel: "ELEVADO",
     threatStableLabel: "ESTABLE",
@@ -549,6 +552,7 @@ export const translations = {
     // New Updates
     fearGreedTitle: "恐怖と欲望",
     netEtfFlowTitle: "純ETFフロー",
+    retailBrokerHealth: "個人ブローカーの健全性",
     threatHighLabel: "HIGH",
     threatElevatedLabel: "ELEVATED",
     threatStableLabel: "STABLE",
