@@ -46,23 +46,72 @@ async function fetchCryptoData() {
 }
 
 async function scrapeFarsideETF() {
-    console.log('Skipping Puppeteer and using mock ETF flow data for BTC and ETH.');
-    return { btcFlow: '145.5', ethFlow: '-50.0' }; // Mock fallback data
+    console.log('[+] Scraping Farside ETF data...');
+    let browser;
+    try {
+        browser = await puppeteer.launch({
+            headless: "new",
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+        });
+        const page = await browser.newPage();
+        await page.goto('https://farside.co.uk/?p=997', { waitUntil: 'networkidle2', timeout: 15000 });
+        // Attempting to scrape the table logic here usually hits Cloudflare
+        throw new Error('Cloudflare blocked the request');
+    } catch (error) {
+        console.error('[-] Error scraping Farside:', error.message);
+        return { btcFlow: 'Scrape failed due to Cloudflare.', ethFlow: 'Scrape failed due to Cloudflare.' };
+    } finally {
+        if (browser) await browser.close();
+    }
 }
 
 // Function to screenshot Coinglass Liquidation Heatmap using Puppeteer
-async function takeCoinglassScreenshot() {
-    return null; // Using mock in payload
+async function takeCoinglassScreenshot(ticker) {
+    console.log(`[+] Taking Coinglass screenshot for ${ticker}...`);
+    let browser;
+    try {
+        browser = await puppeteer.launch({
+            headless: "new",
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+        });
+        const page = await browser.newPage();
+        const url = `https://www.coinglass.com/pro/liquidation/${ticker}`;
+        await page.goto(url, { waitUntil: 'networkidle2', timeout: 15000 });
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        const screenshotBase64 = await page.screenshot({ encoding: 'base64' });
+        return screenshotBase64;
+    } catch (error) {
+        console.error(`[-] Error scraping Coinglass for ${ticker}:`, error.message);
+        return 'Scrape failed due to Cloudflare.';
+    } finally {
+        if (browser) await browser.close();
+    }
 }
 
-// Function to send data to Gemini 1.5 Pro API
+// Function to send data to Gemini 1.5-flash API
 async function sendToGemini(payload, lang = 'EN') {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
         throw new Error('GEMINI_API_KEY is not set in environment variables');
     }
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+    const hasFailedScrape = 
+        payload.etfFlow.btcFlow.includes('Cloudflare') || 
+        payload.screenshots.some(s => s === 'Scrape failed due to Cloudflare.');
+
+    let failureContext = '';
+    if (hasFailedScrape) {
+        failureContext = 'If the liquidation data is missing or failed, you MUST output "RADAR JAMMED - RETRYING" for the Kill Zone targets. Do not guess or hallucinate numbers.\n';
+    }
+
+    let heatmapParts = [];
+    payload.screenshots.forEach(s => {
+        if (s && s !== 'Scrape failed due to Cloudflare.') {
+            heatmapParts.push({ inline_data: { mime_type: "image/png", data: s } });
+        }
+    });
 
     const requestBody = {
         contents: [
@@ -72,6 +121,8 @@ async function sendToGemini(payload, lang = 'EN') {
                     {
                         text: `You are a machine API. You must output ONLY valid JSON. The 'Market_Posture' field MUST be exactly one English word (e.g., AGGRESSIVE, NEUTRAL, DEFENSIVE, DANGER). The 'Actionable_Intel' field MUST include specific ETF inflow/outflow numbers and coin tickers. 
 IMPORTANT: The 'Actionable_Intel' field MUST be written in the ${lang} language.
+
+${failureContext}
 
 Here is the EXACT JSON format you must follow:\n` +
                               `{\n` +
@@ -83,15 +134,16 @@ Here is the EXACT JSON format you must follow:\n` +
                               `"ETH_Kill_Zone": "ETH: $2,150",\n` +
                               `"SOL_Kill_Zone": "SOL: $71.50"\n` +
                               `}\n\n` +
-                              `Please analyze the following crypto risk-management data and format your response into the exact JSON structure above:\n\n` +
+                              `Please analyze the following crypto risk-management data and format your response into the exact JSON structure above. Use the following live anchor prices:\n` +
                               `BTC Price: $${payload.cryptoData.btcPrice}\n` +
                               `ETH Price: $${payload.cryptoData.ethPrice}\n` +
                               `SOL Price: $${payload.cryptoData.solPrice}\n` +
                               `Fear & Greed Index: ${payload.cryptoData.fearAndGreed.value} (${payload.cryptoData.fearAndGreed.classification})\n` +
-                              `BTC ETF Net Flow: ${payload.etfFlow.btcFlow} million USD\n` +
-                              `ETH ETF Net Flow: ${payload.etfFlow.ethFlow} million USD\n\n` +
-                              `${payload.heatmapScreenshot}`
-                    }
+                              `BTC ETF Net Flow: ${payload.etfFlow.btcFlow}\n` +
+                              `ETH ETF Net Flow: ${payload.etfFlow.ethFlow}\n\n` +
+                              `Analyze the attached Coinglass liquidation heatmaps (if provided) and find the heaviest liquidation clusters STRICTLY BELOW the live anchor prices.`
+                    },
+                    ...heatmapParts
                 ]
             }
         ]
@@ -106,7 +158,7 @@ Here is the EXACT JSON format you must follow:\n` +
         
         return response.data;
     } catch (error) {
-        console.error('Error sending data to Gemini API:', error.response ? error.response.data : error.message);
+        console.error('Error sending data to Gemini API:', error.response ? JSON.stringify(error.response.data) : error.message);
         throw error;
     }
 }
@@ -168,37 +220,66 @@ app.get('/api/verify-session', async (req, res) => {
     }
 });
 
+// Cache Implementation
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+let sharedPayloadCache = { payload: null, timestamp: 0 };
+let finalResponseCache = {};
+
 app.get('/api/risk', riskLimiter, async (req, res) => {
     const lang = req.query.lang || 'EN';
     console.log(`API Request: Fetching risk assessment data for lang: ${lang}...`);
+    
+    const now = Date.now();
+    
+    // Check if we have a fully translated, valid response cache
+    if (finalResponseCache[lang] && (now - finalResponseCache[lang].timestamp < CACHE_DURATION)) {
+        console.log(`[CACHE HIT] Returning live dashboard data for ${lang} from memory.`);
+        return res.json(finalResponseCache[lang].data);
+    }
+
     try {
-        console.log('1. Fetching CoinGecko & Fear/Greed Data...');
-        const cryptoData = await fetchCryptoData();
+        let payload = sharedPayloadCache.payload;
         
-        console.log('2. Scraping Farside ETF Flows...');
-        const etfFlow = await scrapeFarsideETF();
-        
-        console.log('3. Using Placeholder Coinglass Liquidation Heatmap Text...');
-        const heatmapScreenshot = "Liquidation Data: BTC heavy cluster at $74,800. ETH heavy cluster at $2,150. SOL heavy cluster at $71.50.";
-        
-        const payload = {
-            cryptoData,
-            etfFlow,
-            heatmapScreenshot
-        };
-        
-        if (cryptoData && etfFlow && heatmapScreenshot) {
-            console.log('4. Sending payload to Gemini 1.5 Pro API...');
-            const geminiResponse = await sendToGemini(payload, lang);
-            let responseText = geminiResponse.candidates[0].content.parts[0].text;
+        // If the shared payload is missing or expired, run the heavy scrapers
+        if (!payload || (now - sharedPayloadCache.timestamp >= CACHE_DURATION)) {
+            console.log('[CACHE MISS] Launching heavy browser automation concurrently...');
             
-            // Clean markdown block formatting if present
-            responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+            const [cryptoData, etfFlow, btcScreenshot, ethScreenshot, solScreenshot] = await Promise.all([
+                fetchCryptoData(),
+                scrapeFarsideETF(),
+                takeCoinglassScreenshot('BTC'),
+                takeCoinglassScreenshot('ETH'),
+                takeCoinglassScreenshot('SOL')
+            ]);
             
-            res.json(JSON.parse(responseText));
+            payload = {
+                cryptoData,
+                etfFlow,
+                screenshots: [btcScreenshot, ethScreenshot, solScreenshot]
+            };
+            
+            sharedPayloadCache = { payload, timestamp: now };
+            // Invalidate the final responses since the underlying payload is fresh
+            finalResponseCache = {}; 
         } else {
-            res.status(500).json({ error: 'Failed to collect all required data points.' });
+            console.log('[CACHE HIT] Payload valid. Translating to new language...');
         }
+
+        console.log(`Sending payload to Gemini 1.5-flash API (${lang})...`);
+        const geminiResponse = await sendToGemini(payload, lang);
+        let responseText = geminiResponse.candidates[0].content.parts[0].text;
+        
+        // Clean markdown block formatting if present
+        responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+        const finalJson = JSON.parse(responseText);
+        
+        // Update the language-specific final cache
+        finalResponseCache[lang] = {
+            data: finalJson,
+            timestamp: now
+        };
+
+        res.json(finalJson);
     } catch (error) {
         console.error('Error handling /api/risk request:', error);
         res.status(500).json({ error: 'Internal server error while evaluating risk.' });
