@@ -71,10 +71,7 @@ async function fetchCorporateData() {
         };
     } catch (error) {
         console.error('[-] Error fetching corporate data:', error.message);
-        return {
-            COIN: { price: '0', changePercent: '0' },
-            HOOD: { price: '0', changePercent: '0' }
-        };
+        return null;
     }
 }
 
@@ -159,6 +156,10 @@ async function sendToGemini(payload, lang = 'EN') {
         });
     }
 
+    const corpPrompt = payload.corpData ? 
+        `COIN: Price $${payload.corpData.COIN.price}, 24h Change: ${payload.corpData.COIN.changePercent}%\nHOOD: Price $${payload.corpData.HOOD.price}, 24h Change: ${payload.corpData.HOOD.changePercent}%` 
+        : `[CRITICAL: THE PROXY OR RATE LIMIT BLOCKED CORPORATE DATA. YOU MUST OUTPUT "RADAR JAMMED" FOR Corporate_Sentiment.]`;
+
         const requestBody = {
             contents: [
                 {
@@ -186,8 +187,7 @@ Here is the EXACT JSON format you must follow:\n` +
                               `ETH Price: $${payload.cryptoData.ethPrice}\n` +
                               `SOL Price: $${payload.cryptoData.solPrice}\n` +
                               `Fear & Greed Index: ${payload.cryptoData.fearAndGreed.value} (${payload.cryptoData.fearAndGreed.classification})\n` +
-                              `COIN Stock: $${payload.corpData.COIN.price} (${payload.corpData.COIN.changePercent}%)\n` +
-                              `HOOD Stock: $${payload.corpData.HOOD.price} (${payload.corpData.HOOD.changePercent}%)\n` +
+                              `${corpPrompt}\n` +
                               `Raw Farside ETF Data:\n${payload.etfFlow.rawText}\n\n` +
                               `CRITICAL DIRECTIVES:\n` +
                               `1. "Corporate_Sentiment": You MUST analyze the COIN and HOOD stock prices. Output a 1-sentence summary of their performance indicating if retail is exhausted. DO NOT OMIT THIS KEY.\n` +
@@ -285,19 +285,17 @@ async function runBackgroundSweep() {
     if (isSweeping) return;
     isSweeping = true;
     console.log('[+] Starting background data sweep...');
-    
     let browser;
     try {
-        const proxyUrl = process.env.PROXY_URL || 'http://proxy.scrapingbee.com:8886';
-        const args = ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'];
-        if (process.env.PROXY_API_KEY) {
-            args.push(`--proxy-server=${proxyUrl}`);
+        const puppeteerArgs = ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'];
+        if (process.env.PROXY_SERVER_URL) {
+            puppeteerArgs.push(`--proxy-server=${process.env.PROXY_SERVER_URL}`);
         }
-
+        
         try {
             browser = await puppeteer.launch({
-                headless: "new",
-                args: args,
+                headless: true,
+                args: puppeteerArgs,
                 ignoreHTTPSErrors: true
             });
         } catch (e) {
@@ -430,7 +428,7 @@ async function fetchAltcoinPrice(ticker) {
     }
 }
 
-async function analyzeAltcoinHeatmap(ticker) {
+async function analyzeAltcoinHeatmap(ticker, base64Image) {
     console.log(`[+] Asking Gemini 2.5 Flash to estimate Kill Zone for ${ticker}...`);
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
@@ -442,21 +440,34 @@ async function analyzeAltcoinHeatmap(ticker) {
 
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
+    const hasFailedScrape = !base64Image || base64Image.includes('PROXY ERROR');
+    const failureInstruction = hasFailedScrape ? `\n[CRITICAL: THE PROXY HAS FAILED TO CAPTURE THE HEATMAP OR IT IS JAMMED. YOU MUST OUTPUT "RADAR JAMMED" FOR Kill_Zone.]` : '';
+
     const requestBody = {
         contents: [
             {
                 role: 'user',
                 parts: [
                     {
-                        text: `You are a quantitative risk AI. The current live spot price of ${ticker} is ${currentPrice}. Analyze the attached Coinglass liquidation heatmap screenshot. You MUST find the heaviest liquidation cluster STRICTLY BELOW the current price of ${currentPrice}. Do not hallucinate. Do not output a target higher than the current price. Output ONLY valid JSON in this format: { "Kill_Zone": "[Price]", "Threat_Level": "[HIGH, ELEVATED, or STABLE]" }`
+                        text: `You are a quantitative risk AI. The current live spot price of ${ticker} is ${currentPrice}. Analyze the attached Coinglass liquidation heatmap screenshot. You MUST find the heaviest liquidation cluster STRICTLY BELOW the current price of ${currentPrice}. Do not hallucinate. Do not output a target higher than the current price. Output ONLY valid JSON in this format: { "Kill_Zone": "[Price]", "Threat_Level": "[HIGH, ELEVATED, or STABLE]" }${failureInstruction}`
                     }
                 ]
             }
         ],
         generationConfig: {
-            temperature: 0.1
+            temperature: 0.1,
+            responseMimeType: "application/json"
         }
     };
+
+    if (!hasFailedScrape) {
+        requestBody.contents[0].parts.push({
+            inlineData: {
+                mimeType: "image/png",
+                data: base64Image
+            }
+        });
+    }
 
     try {
         const response = await axios.post(apiUrl, requestBody, {
@@ -482,16 +493,39 @@ app.get('/api/altcoin', async (req, res) => {
     }
 
     console.log(`API Request: Fetching altcoin radar for ${ticker}...`);
+    let browser;
     try {
-        const jsonResult = await analyzeAltcoinHeatmap(ticker);
+        const puppeteerArgs = ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'];
+        if (process.env.PROXY_SERVER_URL) {
+            puppeteerArgs.push(`--proxy-server=${process.env.PROXY_SERVER_URL}`);
+        }
+        
+        browser = await puppeteer.launch({
+            headless: true,
+            args: puppeteerArgs
+        });
+
+        const screenshot = await takeCoinglassScreenshot(ticker, browser);
+        const jsonResult = await analyzeAltcoinHeatmap(ticker, screenshot);
+        
         if (!jsonResult) {
             return res.status(500).json({ error: 'Failed to analyze heatmap data' });
         }
         
-        res.json(jsonResult);
+        // Ensure final shape is strictly adhered to so UI doesn't crash
+        const finalJson = {
+            "Kill_Zone": jsonResult.Kill_Zone || "RADAR JAMMED",
+            "Threat_Level": jsonResult.Threat_Level || "HIGH"
+        };
+        
+        res.json(finalJson);
     } catch (error) {
         console.error(`Error handling /api/altcoin request for ${ticker}:`, error);
         res.status(500).json({ error: 'Internal server error while evaluating altcoin.' });
+    } finally {
+        if (browser) {
+            await browser.close();
+        }
     }
 });
 
