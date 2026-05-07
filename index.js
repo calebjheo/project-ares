@@ -45,15 +45,12 @@ async function fetchCryptoData() {
     }
 }
 
-async function scrapeFarsideETF() {
+async function scrapeFarsideETF(browser) {
+    if (!browser) return { btcFlow: 'Scrape failed due to Cloudflare.', ethFlow: 'Scrape failed due to Cloudflare.' };
     console.log('[+] Scraping Farside ETF data...');
-    let browser;
+    let page;
     try {
-        browser = await puppeteer.launch({
-            headless: "new",
-            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
-        });
-        const page = await browser.newPage();
+        page = await browser.newPage();
         await page.goto('https://farside.co.uk/?p=997', { waitUntil: 'networkidle2', timeout: 15000 });
         // Attempting to scrape the table logic here usually hits Cloudflare
         throw new Error('Cloudflare blocked the request');
@@ -61,20 +58,17 @@ async function scrapeFarsideETF() {
         console.error('[-] Error scraping Farside:', error.message);
         return { btcFlow: 'Scrape failed due to Cloudflare.', ethFlow: 'Scrape failed due to Cloudflare.' };
     } finally {
-        if (browser) await browser.close();
+        if (page) await page.close().catch(() => {});
     }
 }
 
 // Function to screenshot Coinglass Liquidation Heatmap using Puppeteer
-async function takeCoinglassScreenshot(ticker) {
+async function takeCoinglassScreenshot(ticker, browser) {
+    if (!browser) return 'Scrape failed due to Cloudflare.';
     console.log(`[+] Taking Coinglass screenshot for ${ticker}...`);
-    let browser;
+    let page;
     try {
-        browser = await puppeteer.launch({
-            headless: "new",
-            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
-        });
-        const page = await browser.newPage();
+        page = await browser.newPage();
         const url = `https://www.coinglass.com/pro/liquidation/${ticker}`;
         await page.goto(url, { waitUntil: 'networkidle2', timeout: 15000 });
         await new Promise(resolve => setTimeout(resolve, 3000));
@@ -84,7 +78,7 @@ async function takeCoinglassScreenshot(ticker) {
         console.error(`[-] Error scraping Coinglass for ${ticker}:`, error.message);
         return 'Scrape failed due to Cloudflare.';
     } finally {
-        if (browser) await browser.close();
+        if (page) await page.close().catch(() => {});
     }
 }
 
@@ -95,7 +89,7 @@ async function sendToGemini(payload, lang = 'EN') {
         throw new Error('GEMINI_API_KEY is not set in environment variables');
     }
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
     const hasFailedScrape = 
         payload.etfFlow.btcFlow.includes('Cloudflare') || 
@@ -242,15 +236,27 @@ app.get('/api/risk', riskLimiter, async (req, res) => {
         
         // If the shared payload is missing or expired, run the heavy scrapers
         if (!payload || (now - sharedPayloadCache.timestamp >= CACHE_DURATION)) {
-            console.log('[CACHE MISS] Launching heavy browser automation concurrently...');
+            console.log('[CACHE MISS] Launching single browser instance for concurrent automation...');
+            
+            let browser = null;
+            try {
+                browser = await puppeteer.launch({
+                    headless: "new",
+                    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+                });
+            } catch (e) {
+                console.error("Failed to launch Puppeteer completely:", e.message);
+            }
             
             const [cryptoData, etfFlow, btcScreenshot, ethScreenshot, solScreenshot] = await Promise.all([
                 fetchCryptoData(),
-                scrapeFarsideETF(),
-                takeCoinglassScreenshot('BTC'),
-                takeCoinglassScreenshot('ETH'),
-                takeCoinglassScreenshot('SOL')
+                scrapeFarsideETF(browser),
+                takeCoinglassScreenshot('BTC', browser),
+                takeCoinglassScreenshot('ETH', browser),
+                takeCoinglassScreenshot('SOL', browser)
             ]);
+            
+            if (browser) await browser.close().catch(() => {});
             
             payload = {
                 cryptoData,
