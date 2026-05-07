@@ -187,7 +187,9 @@ Here is the EXACT JSON format you must follow:\n` +
                               `COIN Stock: $${payload.corpData.COIN.price} (${payload.corpData.COIN.changePercent}%)\n` +
                               `HOOD Stock: $${payload.corpData.HOOD.price} (${payload.corpData.HOOD.changePercent}%)\n` +
                               `Raw Farside ETF Data:\n${payload.etfFlow.rawText}\n\n` +
-                              `Analyze the attached Coinglass liquidation heatmaps (if provided) and find the heaviest liquidation clusters STRICTLY BELOW the live anchor prices.`
+                              `CRITICAL DIRECTIVES:\n` +
+                              `1. "Corporate_Sentiment": You MUST analyze the COIN and HOOD stock prices. Output a 1-sentence summary of their performance indicating if retail is exhausted. DO NOT OMIT THIS KEY.\n` +
+                              `2. "BTC_Kill_Zone" / "ETH_Kill_Zone" / "SOL_Kill_Zone": Analyze the attached Coinglass liquidation heatmaps. Find the heaviest liquidation clusters STRICTLY BELOW the live anchor prices. IF THE IMAGE IS A CLOUDFLARE CHALLENGE PAGE OR MISSING, YOU MUST OUTPUT "RADAR JAMMED". DO NOT COPY THE EXAMPLE FORMATTING NUMBERS ($74,800, etc) UNDER ANY CIRCUMSTANCES.`
                     },
                     ...heatmapParts
                 ]
