@@ -103,7 +103,7 @@ async function sendToGemini(payload, lang = 'EN') {
 
     let failureContext = '';
     if (hasFailedScrape) {
-        failureContext = 'If the liquidation data is missing or failed, you MUST output "RADAR JAMMED - RETRYING" for the Kill Zone targets. Do not guess or hallucinate numbers.\n';
+        failureContext = 'If the liquidation data is missing or failed, you MUST STILL OUTPUT VALID JSON. Set the values of "BTC_Kill_Zone", "ETH_Kill_Zone", and "SOL_Kill_Zone" to "RADAR JAMMED - RETRYING". Set "Net_ETF_Flow" to "RADAR JAMMED". Do not guess or hallucinate numerical targets.\n';
     }
 
     let heatmapParts = [];
@@ -271,7 +271,23 @@ app.get('/api/risk', riskLimiter, async (req, res) => {
         
         // Clean markdown block formatting if present
         responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-        const finalJson = JSON.parse(responseText);
+        
+        let finalJson;
+        try {
+            finalJson = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('Failed to parse Gemini output as JSON:', responseText);
+            // Fallback to ensure the dashboard doesn't crash if Gemini outputs plain text
+            finalJson = {
+                "Market_Posture": "UNKNOWN",
+                "Fear_Greed_Score": payload.cryptoData.fearAndGreed.value || "50",
+                "Net_ETF_Flow": "RADAR JAMMED",
+                "Actionable_Intel": "RADAR JAMMED - System is attempting to bypass Cloudflare constraints. Retrying secure connection...",
+                "BTC_Kill_Zone": "RADAR JAMMED - RETRYING",
+                "ETH_Kill_Zone": "RADAR JAMMED - RETRYING",
+                "SOL_Kill_Zone": "RADAR JAMMED - RETRYING"
+            };
+        }
         
         // Update the language-specific final cache
         finalResponseCache[lang] = {
