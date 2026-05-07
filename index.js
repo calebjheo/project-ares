@@ -56,12 +56,12 @@ async function scrapeFarsideETF(browser) {
             await page.authenticate({ username: process.env.PROXY_API_KEY, password: '' });
         }
         
-        await page.goto('https://farside.co.uk/?p=997', { waitUntil: 'networkidle2', timeout: 30000 });
+        await page.goto('https://farside.co.uk/?p=997', { waitUntil: 'networkidle2', timeout: 60000 });
         const text = await page.evaluate(() => document.body.innerText.substring(0, 3000));
         return { rawText: text };
     } catch (error) {
         console.error('[-] Error scraping Farside:', error.message);
-        return { rawText: 'Scrape failed due to Cloudflare.' };
+        return { rawText: `PROXY ERROR: ${error.message}` };
     } finally {
         if (page) await page.close().catch(() => {});
     }
@@ -80,13 +80,13 @@ async function takeCoinglassScreenshot(ticker, browser) {
         }
         
         const url = `https://www.coinglass.com/pro/liquidation/${ticker}`;
-        await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
+        await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
         await new Promise(resolve => setTimeout(resolve, 5000));
         const screenshotBase64 = await page.screenshot({ encoding: 'base64' });
         return screenshotBase64;
     } catch (error) {
         console.error(`[-] Error scraping Coinglass for ${ticker}:`, error.message);
-        return 'Scrape failed due to Cloudflare.';
+        return `PROXY ERROR: ${error.message}`;
     } finally {
         if (page) await page.close().catch(() => {});
     }
@@ -102,18 +102,19 @@ async function sendToGemini(payload, lang = 'EN') {
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
     const hasFailedScrape = 
-        payload.etfFlow.rawText.includes('Cloudflare') || 
-        payload.screenshots.some(s => s === 'Scrape failed due to Cloudflare.');
+        payload.etfFlow.rawText.includes('PROXY ERROR') || 
+        payload.screenshots.some(s => s && s.includes('PROXY ERROR'));
 
     let failureContext = '';
     if (hasFailedScrape) {
-        failureContext = 'If the liquidation data is missing or failed, you MUST STILL OUTPUT VALID JSON. Set the values of "BTC_Kill_Zone", "ETH_Kill_Zone", and "SOL_Kill_Zone" to "RADAR JAMMED - RETRYING". Set "Net_ETF_Flow" to "RADAR JAMMED". Do not guess or hallucinate numerical targets.\n';
+        const errorMessage = payload.etfFlow.rawText.includes('PROXY ERROR') ? payload.etfFlow.rawText : payload.screenshots.find(s => s && s.includes('PROXY ERROR'));
+        failureContext = `The proxy scraper failed with the following error: "${errorMessage}". You MUST STILL OUTPUT VALID JSON. Set the values of "BTC_Kill_Zone", "ETH_Kill_Zone", and "SOL_Kill_Zone" to "RADAR JAMMED - RETRYING". Set "Net_ETF_Flow" to "RADAR JAMMED". In the "Actionable_Intel" field, you MUST explain that the radar is jammed specifically because of this proxy error: ${errorMessage}. Do not guess or hallucinate numerical targets.\n`;
     }
     
     let heatmapParts = [];
     if (payload.screenshots && payload.screenshots.length > 0) {
         payload.screenshots.forEach(s => {
-            if (s && s !== 'Scrape failed due to Cloudflare.') {
+            if (s && !s.includes('PROXY ERROR')) {
                 heatmapParts.push({ inline_data: { mime_type: "image/png", data: s } });
             }
         });
