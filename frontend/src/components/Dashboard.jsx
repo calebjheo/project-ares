@@ -217,8 +217,8 @@ const DashboardContent = () => {
       }
     };
 
-    fetchData();
-    const interval = setInterval(fetchData, 45000); // 45 seconds polling
+    fetchRiskData();
+    const interval = setInterval(fetchRiskData, 45000); // 45 seconds polling
     
     return () => clearInterval(interval);
   }, []);
