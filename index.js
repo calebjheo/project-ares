@@ -100,7 +100,7 @@ async function takeCoinglassScreenshot(ticker) {
 
     console.log(`[+] Taking Coinglass screenshot for ${ticker} via ScrapingBee API...`);
     try {
-        const targetUrl = encodeURIComponent(`https://www.coinglass.com/pro/liquidation/${ticker}`);
+        const targetUrl = encodeURIComponent(`https://www.coinglass.com/pro/futures/LiquidationHeatMap?symbol=${ticker}`);
         const proxyApi = `https://app.scrapingbee.com/api/v1/?api_key=${process.env.PROXY_API_KEY}&url=${targetUrl}&render_js=true&stealth_proxy=true&screenshot=true&window_width=1920&window_height=1080&wait=3000`;
         
         const response = await axios.get(proxyApi, { 
