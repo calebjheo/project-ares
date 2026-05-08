@@ -2,9 +2,6 @@ require('dotenv').config();
 const axios = require('axios');
 const express = require('express');
 const cors = require('cors');
-const puppeteer = require('puppeteer-extra');
-const StealthPlugin = require('puppeteer-extra-plugin-stealth');
-puppeteer.use(StealthPlugin());
 const rateLimit = require('express-rate-limit');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const jwt = require('jsonwebtoken');
@@ -75,50 +72,47 @@ async function fetchCorporateData() {
     }
 }
 
-async function scrapeFarsideETF(browser) {
-    if (!browser) return { rawText: 'Scrape failed due to Cloudflare.' };
-    console.log('[+] Scraping Farside ETF data via Proxy...');
-    let page;
+async function scrapeFarsideETF() {
+    if (!process.env.PROXY_API_KEY && process.env.NODE_ENV === 'production') {
+        return { rawText: 'PROXY ERROR: PROXY_API_KEY is not defined in Render environment variables. You must set it to route traffic.' };
+    }
+    
+    console.log('[+] Scraping Farside ETF data via ScrapingBee API...');
     try {
-        page = await browser.newPage();
+        const url = encodeURIComponent('https://farside.co.uk/?p=997');
+        const proxyApi = `https://app.scrapingbee.com/api/v1/?api_key=${process.env.PROXY_API_KEY}&url=${url}&render_js=true&stealth_proxy=true`;
         
-        if (process.env.PROXY_API_KEY) {
-            await page.authenticate({ username: process.env.PROXY_API_KEY, password: '' });
-        }
-        
-        await page.goto('https://farside.co.uk/?p=997', { waitUntil: 'domcontentloaded', timeout: 60000 });
-        const text = await page.evaluate(() => document.body.innerText.substring(0, 3000));
+        const response = await axios.get(proxyApi, { timeout: 45000 });
+        // Instead of parsing DOM, we just extract text from the raw HTML payload roughly
+        const text = response.data.replace(/<[^>]*>?/gm, ' ').substring(0, 3000);
         return { rawText: text };
     } catch (error) {
         console.error('[-] Error scraping Farside:', error.message);
         return { rawText: `PROXY ERROR: ${error.message}` };
-    } finally {
-        if (page) await page.close().catch(() => {});
     }
 }
 
-// Function to screenshot Coinglass Liquidation Heatmap using Puppeteer via Proxy
-async function takeCoinglassScreenshot(ticker, browser) {
-    if (!browser) return 'Scrape failed due to Cloudflare.';
-    console.log(`[+] Taking Coinglass screenshot for ${ticker} via Proxy...`);
-    let page;
+// Function to screenshot Coinglass Liquidation Heatmap using ScrapingBee API
+async function takeCoinglassScreenshot(ticker) {
+    if (!process.env.PROXY_API_KEY && process.env.NODE_ENV === 'production') {
+        return `PROXY ERROR: PROXY_API_KEY is not defined. Cannot capture heatmap.`;
+    }
+
+    console.log(`[+] Taking Coinglass screenshot for ${ticker} via ScrapingBee API...`);
     try {
-        page = await browser.newPage();
+        const targetUrl = encodeURIComponent(`https://www.coinglass.com/pro/liquidation/${ticker}`);
+        const proxyApi = `https://app.scrapingbee.com/api/v1/?api_key=${process.env.PROXY_API_KEY}&url=${targetUrl}&render_js=true&stealth_proxy=true&screenshot=true&window_width=1920&window_height=1080&wait=3000`;
         
-        if (process.env.PROXY_API_KEY) {
-            await page.authenticate({ username: process.env.PROXY_API_KEY, password: '' });
-        }
+        const response = await axios.get(proxyApi, { 
+            responseType: 'arraybuffer',
+            timeout: 60000 
+        });
         
-        const url = `https://www.coinglass.com/pro/liquidation/${ticker}`;
-        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        const screenshotBase64 = await page.screenshot({ encoding: 'base64' });
-        return screenshotBase64;
+        const base64Screenshot = Buffer.from(response.data, 'binary').toString('base64');
+        return base64Screenshot;
     } catch (error) {
         console.error(`[-] Error scraping Coinglass for ${ticker}:`, error.message);
         return `PROXY ERROR: ${error.message}`;
-    } finally {
-        if (page) await page.close().catch(() => {});
     }
 }
 
@@ -285,33 +279,16 @@ async function runBackgroundSweep() {
     if (isSweeping) return;
     isSweeping = true;
     console.log('[+] Starting background data sweep...');
-    let browser;
+    
     try {
-        const puppeteerArgs = ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'];
-        if (process.env.PROXY_SERVER_URL) {
-            puppeteerArgs.push(`--proxy-server=${process.env.PROXY_SERVER_URL}`);
-        }
-        
-        try {
-            browser = await puppeteer.launch({
-                headless: true,
-                args: puppeteerArgs,
-                ignoreHTTPSErrors: true
-            });
-        } catch (e) {
-            console.error("[-] Failed to launch Puppeteer completely:", e.message);
-        }
-        
         const [cryptoData, etfFlow, btcScreenshot, ethScreenshot, solScreenshot, corpData] = await Promise.all([
             fetchCryptoData(),
-            scrapeFarsideETF(browser),
-            takeCoinglassScreenshot('BTC', browser),
-            takeCoinglassScreenshot('ETH', browser),
-            takeCoinglassScreenshot('SOL', browser),
+            scrapeFarsideETF(),
+            takeCoinglassScreenshot('BTC'),
+            takeCoinglassScreenshot('ETH'),
+            takeCoinglassScreenshot('SOL'),
             fetchCorporateData()
         ]);
-        
-        if (browser) await browser.close().catch(() => {});
         
         const payload = {
             cryptoData,
@@ -493,19 +470,8 @@ app.get('/api/altcoin', async (req, res) => {
     }
 
     console.log(`API Request: Fetching altcoin radar for ${ticker}...`);
-    let browser;
     try {
-        const puppeteerArgs = ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'];
-        if (process.env.PROXY_SERVER_URL) {
-            puppeteerArgs.push(`--proxy-server=${process.env.PROXY_SERVER_URL}`);
-        }
-        
-        browser = await puppeteer.launch({
-            headless: true,
-            args: puppeteerArgs
-        });
-
-        const screenshot = await takeCoinglassScreenshot(ticker, browser);
+        const screenshot = await takeCoinglassScreenshot(ticker);
         const jsonResult = await analyzeAltcoinHeatmap(ticker, screenshot);
         
         if (!jsonResult) {
@@ -522,10 +488,6 @@ app.get('/api/altcoin', async (req, res) => {
     } catch (error) {
         console.error(`Error handling /api/altcoin request for ${ticker}:`, error);
         res.status(500).json({ error: 'Internal server error while evaluating altcoin.' });
-    } finally {
-        if (browser) {
-            await browser.close();
-        }
     }
 });
 
