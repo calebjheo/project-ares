@@ -308,9 +308,9 @@ async function runBackgroundSweep() {
     }
 }
 
-// Start sweeping immediately, then every 5 minutes
+// Start background cron job every 60 minutes
 runBackgroundSweep();
-setInterval(runBackgroundSweep, 300000);
+setInterval(runBackgroundSweep, 60 * 60 * 1000);
 
 app.get('/api/risk', riskLimiter, async (req, res) => {
     const lang = req.query.lang || 'EN';
