@@ -107,8 +107,23 @@ async function takeCoinglassScreenshot(ticker) {
 
     console.log(`[+] Taking Coinglass screenshot for ${ticker} via ScrapingBee API...`);
     try {
-        const targetUrl = encodeURIComponent(`https://www.coinglass.com/pro/futures/LiquidationHeatMap?symbol=${ticker}`);
-        const proxyApi = `https://app.scrapingbee.com/api/v1/?api_key=${process.env.PROXY_API_KEY}&url=${targetUrl}&render_js=true&stealth_proxy=true&premium_proxy=true&screenshot=true&window_width=1920&window_height=1080&wait=10000`;
+        const targetUrl = encodeURIComponent(`https://www.coinglass.com/pro/futures/LiquidationHeatMap`);
+        let proxyApi = `https://app.scrapingbee.com/api/v1/?api_key=${process.env.PROXY_API_KEY}&url=${targetUrl}&render_js=true&stealth_proxy=true&premium_proxy=true&screenshot=true&window_width=1920&window_height=1080&wait=10000`;
+        
+        // If it's an altcoin, execute server-side Puppeteer instructions
+        if (ticker !== 'BTC') {
+            const jsScenario = {
+                instructions: [
+                    { "click": "input.MuiAutocomplete-input" },
+                    { "wait": 1000 },
+                    { "fill": ["input.MuiAutocomplete-input", ticker] },
+                    { "wait_for": "li.MuiAutocomplete-option" },
+                    { "click": "li.MuiAutocomplete-option" },
+                    { "wait": 10000 }
+                ]
+            };
+            proxyApi += `&js_scenario=${encodeURIComponent(JSON.stringify(jsScenario))}`;
+        }
         
         const response = await axios.get(proxyApi, { 
             responseType: 'arraybuffer',
@@ -137,21 +152,27 @@ async function sendToGemini(payload, lang = 'EN') {
         payload.etfFlow.rawText.includes('Cloudflare') ||
         payload.etfFlow.rawText.includes('security') ||
         payload.etfFlow.rawText.includes('Just a moment') ||
-        (payload.btcScreenshot && payload.btcScreenshot.includes('PROXY ERROR'));
+        (payload.btcScreenshot && payload.btcScreenshot.includes('PROXY ERROR')) ||
+        (payload.ethScreenshot && payload.ethScreenshot.includes('PROXY ERROR')) ||
+        (payload.solScreenshot && payload.solScreenshot.includes('PROXY ERROR'));
 
     let failureContext = '';
     if (hasFailedScrape) {
         let errorMessage = 'Cloudflare Anti-Bot Protection Blocked the Request';
         if (payload.etfFlow.rawText.includes('PROXY ERROR')) errorMessage = payload.etfFlow.rawText;
         if (payload.btcScreenshot && typeof payload.btcScreenshot === 'string' && payload.btcScreenshot.includes('PROXY ERROR')) errorMessage = payload.btcScreenshot;
+        else if (payload.ethScreenshot && typeof payload.ethScreenshot === 'string' && payload.ethScreenshot.includes('PROXY ERROR')) errorMessage = payload.ethScreenshot;
+        else if (payload.solScreenshot && typeof payload.solScreenshot === 'string' && payload.solScreenshot.includes('PROXY ERROR')) errorMessage = payload.solScreenshot;
         
-        failureContext = `The scraper failed to fetch live data with the following error: "${errorMessage}". You MUST STILL OUTPUT VALID JSON. Set the values of "BTC_Kill_Zone" to "RADAR JAMMED - RETRYING". Set "Net_ETF_Flow" to "RADAR JAMMED". Set "Corporate_Sentiment" to "RADAR JAMMED". In the "Actionable_Intel" field, you MUST explain that the radar is jammed because of this error: ${errorMessage}. DO NOT copy the numbers from the example structure. DO NOT hallucinate inflows or outflows. Say explicitly that data is jammed.\n`;
+        failureContext = `The scraper failed to fetch live data with the following error: "${errorMessage}". You MUST STILL OUTPUT VALID JSON. Set the values of "BTC_Kill_Zone", "ETH_Kill_Zone", and "SOL_Kill_Zone" to "RADAR JAMMED - RETRYING". Set "Net_ETF_Flow" to "RADAR JAMMED". Set "Corporate_Sentiment" to "RADAR JAMMED". In the "Actionable_Intel" field, you MUST explain that the radar is jammed because of this error: ${errorMessage}. DO NOT copy the numbers from the example structure. DO NOT hallucinate inflows or outflows. Say explicitly that data is jammed.\n`;
     }
     
     let heatmapParts = [];
-    if (payload.btcScreenshot && typeof payload.btcScreenshot === 'string' && !payload.btcScreenshot.includes('PROXY ERROR')) {
-        heatmapParts.push({ inline_data: { mime_type: "image/png", data: payload.btcScreenshot } });
-    }
+    [payload.btcScreenshot, payload.ethScreenshot, payload.solScreenshot].forEach(s => {
+        if (s && typeof s === 'string' && !s.includes('PROXY ERROR')) {
+            heatmapParts.push({ inline_data: { mime_type: "image/png", data: s } });
+        }
+    });
 
     const corpPrompt = payload.corpData ? 
         `COIN: Price $${payload.corpData.COIN.price}, 24h Change: ${payload.corpData.COIN.changePercent}%\nHOOD: Price $${payload.corpData.HOOD.price}, 24h Change: ${payload.corpData.HOOD.changePercent}%` 
@@ -188,8 +209,7 @@ Here is the EXACT JSON format you must follow:\n` +
                               `Raw Farside ETF Data:\n${payload.etfFlow.rawText}\n\n` +
                               `CRITICAL DIRECTIVES:\n` +
                               `1. "Corporate_Sentiment": You MUST analyze the COIN and HOOD stock prices. Output a 1-sentence summary of their performance indicating if retail is exhausted. DO NOT OMIT THIS KEY.\n` +
-                              `2. "BTC_Kill_Zone": Analyze the attached Coinglass liquidation heatmap. Find the heaviest liquidation clusters STRICTLY BELOW the live anchor prices. IF THE IMAGE IS A CLOUDFLARE CHALLENGE PAGE OR MISSING, YOU MUST OUTPUT "RADAR JAMMED". DO NOT COPY THE EXAMPLE FORMATTING NUMBERS ($74,800, etc) UNDER ANY CIRCUMSTANCES.\n` +
-                              `3. "ETH_Kill_Zone" and "SOL_Kill_Zone": Set these explicitly to the string "N/A".`
+                              `2. "BTC_Kill_Zone" / "ETH_Kill_Zone" / "SOL_Kill_Zone": Analyze the attached Coinglass liquidation heatmaps. Find the heaviest liquidation clusters STRICTLY BELOW the live anchor prices. IF THE IMAGE IS A CLOUDFLARE CHALLENGE PAGE OR MISSING, YOU MUST OUTPUT "RADAR JAMMED". DO NOT COPY THE EXAMPLE FORMATTING NUMBERS ($74,800, etc) UNDER ANY CIRCUMSTANCES.`
                         },
                         ...heatmapParts
                     ]
@@ -289,12 +309,16 @@ async function runBackgroundSweep() {
         const cryptoData = await fetchCryptoData();
         const etfFlow = await scrapeFarsideETF();
         const btcScreenshot = await takeCoinglassScreenshot('BTC');
+        const ethScreenshot = await takeCoinglassScreenshot('ETH');
+        const solScreenshot = await takeCoinglassScreenshot('SOL');
         const corpData = await fetchCorporateData();
         
         const payload = {
             cryptoData,
             etfFlow,
             btcScreenshot,
+            ethScreenshot,
+            solScreenshot,
             corpData
         };
         
