@@ -145,7 +145,9 @@ async function sendToGemini(payload, lang = 'EN') {
     if (hasFailedScrape) {
         let errorMessage = 'Cloudflare Anti-Bot Protection Blocked the Request';
         if (payload.etfFlow.rawText.includes('PROXY ERROR')) errorMessage = payload.etfFlow.rawText;
-        if ((payload.btcScreenshot && payload.btcScreenshot.includes('PROXY ERROR')) || (payload.ethScreenshot && payload.ethScreenshot.includes('PROXY ERROR')) || (payload.solScreenshot && payload.solScreenshot.includes('PROXY ERROR'))) errorMessage = "Coinglass screenshot proxy error";
+        if (payload.btcScreenshot && typeof payload.btcScreenshot === 'string' && payload.btcScreenshot.includes('PROXY ERROR')) errorMessage = payload.btcScreenshot;
+        else if (payload.ethScreenshot && typeof payload.ethScreenshot === 'string' && payload.ethScreenshot.includes('PROXY ERROR')) errorMessage = payload.ethScreenshot;
+        else if (payload.solScreenshot && typeof payload.solScreenshot === 'string' && payload.solScreenshot.includes('PROXY ERROR')) errorMessage = payload.solScreenshot;
         
         failureContext = `The scraper failed to fetch live data with the following error: "${errorMessage}". You MUST STILL OUTPUT VALID JSON. Set the values of "BTC_Kill_Zone", "ETH_Kill_Zone", and "SOL_Kill_Zone" to "RADAR JAMMED - RETRYING". Set "Net_ETF_Flow" to "RADAR JAMMED". Set "Corporate_Sentiment" to "RADAR JAMMED". In the "Actionable_Intel" field, you MUST explain that the radar is jammed because of this error: ${errorMessage}. DO NOT copy the numbers from the example structure. DO NOT hallucinate inflows or outflows. Say explicitly that data is jammed.\n`;
     }
