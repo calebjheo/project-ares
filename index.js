@@ -210,7 +210,7 @@ Here is the EXACT JSON format you must follow:\n` +
                               `CRITICAL DIRECTIVES:\n` +
                               `1. "Corporate_Sentiment": You MUST analyze the COIN and HOOD stock prices. Output a 2-3 sentence detailed summary including their exact price changes (e.g. "down 4.08%") and explain what this indicates about retail trading volume, market enthusiasm, and potential retail exhaustion. Provide a highly detailed breakdown. DO NOT OMIT THIS KEY.\n` +
                               `2. "BTC_Kill_Zone" / "ETH_Kill_Zone" / "SOL_Kill_Zone": Analyze the attached Coinglass liquidation heatmaps. Find the heaviest liquidation clusters STRICTLY BELOW the live anchor prices. Format the values WITH a dollar sign and commas (e.g. "$74,800"). IF THE IMAGE IS A CLOUDFLARE CHALLENGE PAGE OR MISSING, YOU MUST OUTPUT "RADAR JAMMED".\n` +
-                              `3. "Actionable_Intel": Provide a highly detailed 3-4 sentence strategic analysis synthesizing the ETF flows, Kill Zones, and Retail Sentiment. Explain exactly what these metrics combined mean for the market right now.`
+                              `3. "Actionable_Intel": Provide a highly detailed 3-4 sentence strategic analysis synthesizing ONLY the institutional ETF flows and Kill Zones. Explain exactly what Wall Street's activity and the liquidation clusters mean for the market right now. DO NOT mention retail sentiment, COIN, or HOOD, as that is covered separately.`
                         },
                         ...heatmapParts
                     ]
