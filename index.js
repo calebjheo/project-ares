@@ -116,7 +116,7 @@ async function takeCoinglassScreenshot(ticker) {
                 instructions: [
                     { "click": "input.MuiAutocomplete-input" },
                     { "wait": 1000 },
-                    { "evaluate": "const input = document.querySelector('input.MuiAutocomplete-input'); const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set; setter.call(input, ''); input.dispatchEvent(new Event('input', { bubbles: true }));" },
+                    { "evaluate": "const clearBtn = document.querySelector('button[aria-label=\"Clear\"]') || document.querySelector('button[title=\"Clear\"]') || document.querySelector('.MuiAutocomplete-clearIndicator') || document.querySelector('button[aria-label=\"Close\"]'); if(clearBtn) clearBtn.click();" },
                     { "wait": 1000 },
                     { "fill": ["input.MuiAutocomplete-input", ticker] },
                     { "wait_for": "li.MuiAutocomplete-option" },
@@ -210,7 +210,7 @@ Here is the EXACT JSON format you must follow:\n` +
                               `${corpPrompt}\n` +
                               `Raw Farside ETF Data:\n${payload.etfFlow.rawText}\n\n` +
                               `CRITICAL DIRECTIVES:\n` +
-                              `1. "Corporate_Sentiment": You MUST analyze the COIN and HOOD stock prices. Output a 1-sentence summary of their performance indicating if retail is exhausted. DO NOT OMIT THIS KEY.\n` +
+                              `1. "Corporate_Sentiment": You MUST analyze the COIN and HOOD stock prices. Output a 2-3 sentence detailed summary including their exact price changes (e.g. "down 4.08%") and explain what this indicates about retail trading volume, market enthusiasm, and potential retail exhaustion. Provide a highly detailed breakdown. DO NOT OMIT THIS KEY.\n` +
                               `2. "BTC_Kill_Zone" / "ETH_Kill_Zone" / "SOL_Kill_Zone": Analyze the attached Coinglass liquidation heatmaps. Find the heaviest liquidation clusters STRICTLY BELOW the live anchor prices. IF THE IMAGE IS A CLOUDFLARE CHALLENGE PAGE OR MISSING, YOU MUST OUTPUT "RADAR JAMMED". DO NOT COPY THE EXAMPLE FORMATTING NUMBERS ($74,800, etc) UNDER ANY CIRCUMSTANCES.`
                         },
                         ...heatmapParts
