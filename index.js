@@ -110,22 +110,20 @@ async function takeCoinglassScreenshot(ticker) {
         const targetUrl = encodeURIComponent(`https://www.coinglass.com/pro/futures/LiquidationHeatMap`);
         let proxyApi = `https://app.scrapingbee.com/api/v1/?api_key=${process.env.PROXY_API_KEY}&url=${targetUrl}&render_js=true&stealth_proxy=true&premium_proxy=true&screenshot=true&window_width=1920&window_height=1080&wait=10000`;
         
-        // If it's an altcoin, execute server-side Puppeteer instructions
-        if (ticker !== 'BTC') {
-            const jsScenario = {
-                instructions: [
-                    { "click": "input.MuiAutocomplete-input" },
-                    { "wait": 1000 },
-                    { "evaluate": "const input = document.querySelector('input.MuiAutocomplete-input'); input.focus(); document.execCommand('selectAll', false, null); document.execCommand('delete', false, null);" },
-                    { "wait": 1000 },
-                    { "fill": ["input.MuiAutocomplete-input", ticker] },
-                    { "wait_for": "li.MuiAutocomplete-option" },
-                    { "click": "li.MuiAutocomplete-option" },
-                    { "wait": 10000 }
-                ]
-            };
-            proxyApi += `&js_scenario=${encodeURIComponent(JSON.stringify(jsScenario))}`;
-        }
+        // Always execute server-side Puppeteer instructions to bypass Cloudflare and explicitly select the asset
+        const jsScenario = {
+            instructions: [
+                { "click": "input.MuiAutocomplete-input" },
+                { "wait": 1000 },
+                { "evaluate": "const input = document.querySelector('input.MuiAutocomplete-input'); input.focus(); document.execCommand('selectAll', false, null); document.execCommand('delete', false, null);" },
+                { "wait": 1000 },
+                { "fill": ["input.MuiAutocomplete-input", ticker] },
+                { "wait_for": "li.MuiAutocomplete-option" },
+                { "click": "li.MuiAutocomplete-option" },
+                { "wait": 10000 }
+            ]
+        };
+        proxyApi += `&js_scenario=${encodeURIComponent(JSON.stringify(jsScenario))}`;
         
         const response = await axios.get(proxyApi, { 
             responseType: 'arraybuffer',
