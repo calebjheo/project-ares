@@ -166,6 +166,7 @@ const DashboardContent = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [liquidations, setLiquidations] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isMethodologyOpen, setIsMethodologyOpen] = useState(false);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
@@ -209,15 +210,74 @@ const DashboardContent = () => {
         setData(json);
         setError(null);
       } catch (err) {
-        console.error('Error fetching data:', err);
-        setError(err.message);
+        console.error('Data fetch error:', err);
+        setError('Failed to securely connect to Project ARES network.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchRiskData();
-  }, [language]);
+    fetchData();
+    const interval = setInterval(fetchData, 45000); // 45 seconds polling
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  // Live Whale Watch WebSocket
+  useEffect(() => {
+    if (!isProUser) return;
+    
+    const ws = new WebSocket('wss://fstream.binance.com/ws/!forceOrder@arr');
+    
+    ws.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data);
+        if (payload.e === 'forceOrder') {
+          const order = payload.o;
+          const size = (parseFloat(order.q) * parseFloat(order.p));
+          
+          // Only show liquidations over $10,000 to reduce noise
+          if (size > 10000) {
+            const isLong = order.S === 'SELL'; // If forced to SELL, it was a LONG being liquidated
+            const formattedSize = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(size);
+            const sideText = isLong ? 'Longs Liquidated' : 'Shorts Liquidated';
+            const icon = isLong ? '🚨' : '🟢';
+            const colorClass = isLong ? 'text-red-400' : 'text-green-400';
+            
+            const liqText = `${formattedSize} ${order.s.replace('USDT', '')} ${sideText}`;
+            
+            setLiquidations(prev => {
+              const next = [{ text: liqText, icon, colorClass, id: payload.E + order.s }, ...prev].slice(0, 15);
+              return next;
+            });
+          }
+        }
+      } catch (e) {
+        // Ignore parsing errors
+      }
+    };
+    
+    return () => ws.close();
+  }, [isProUser]);
+
+  if (!agreedToTos) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950 p-4">
+        <div className="bg-slate-900 border border-white/10 rounded-2xl p-8 max-w-lg w-full">
+          <h2 className="text-xl font-bold text-white mb-4">Terms of Service</h2>
+          <p className="text-gray-400 text-sm mb-6">
+            Project ARES is a quantitative tool for informational purposes. By proceeding, you acknowledge that all market data and analysis provided here does not constitute financial advice. Proceed at your own risk.
+          </p>
+          <button 
+            onClick={() => setAgreedToTos(true)}
+            className="w-full py-3 rounded-lg bg-blue-600 text-white font-bold hover:bg-blue-700 transition"
+          >
+            Agree & Enter
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col relative pb-20 md:pb-24">
@@ -418,13 +478,19 @@ const DashboardContent = () => {
 
           <div className={`relative pl-32 whitespace-nowrap overflow-hidden flex items-center h-5 transition-all duration-300 ${!isProUser ? 'blur-sm select-none opacity-40' : ''}`}>
             <div className="animate-marquee flex gap-8 min-w-max">
-              <span className="text-gray-300 font-mono text-xs"><span className="text-red-400 mr-2">🚨</span> 500 BTC transferred to Coinbase</span>
-              <span className="text-gray-300 font-mono text-xs"><span className="text-green-400 mr-2">🟢</span> BlackRock ETF inflows hit $120M</span>
-              <span className="text-gray-300 font-mono text-xs"><span className="text-red-400 mr-2">🚨</span> $50M ETH Longs Liquidated</span>
-              {/* Duplicate for infinite loop */}
-              <span className="text-gray-300 font-mono text-xs"><span className="text-red-400 mr-2">🚨</span> 500 BTC transferred to Coinbase</span>
-              <span className="text-gray-300 font-mono text-xs"><span className="text-green-400 mr-2">🟢</span> BlackRock ETF inflows hit $120M</span>
-              <span className="text-gray-300 font-mono text-xs"><span className="text-red-400 mr-2">🚨</span> $50M ETH Longs Liquidated</span>
+              {liquidations.length > 0 ? (
+                <>
+                  {liquidations.map(liq => (
+                    <span key={liq.id} className="text-gray-300 font-mono text-xs"><span className={`${liq.colorClass} mr-2`}>{liq.icon}</span> {liq.text}</span>
+                  ))}
+                  {/* Duplicate for infinite loop */}
+                  {liquidations.map(liq => (
+                    <span key={liq.id + '_dup'} className="text-gray-300 font-mono text-xs"><span className={`${liq.colorClass} mr-2`}>{liq.icon}</span> {liq.text}</span>
+                  ))}
+                </>
+              ) : (
+                <span className="text-gray-300 font-mono text-xs animate-pulse">📡 Intercepting live market liquidations...</span>
+              )}
             </div>
           </div>
 

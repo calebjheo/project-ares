@@ -26,7 +26,7 @@ const ActionableIntel = ({ intel }) => {
       </div>
       
       <div className="relative z-10">
-        <p className="font-sans text-gray-300 text-sm leading-loose whitespace-pre-wrap">
+        <p className="font-sans text-sm md:text-base text-gray-300 leading-relaxed whitespace-pre-wrap">
           {intel || t('intelAwaiting')}
         </p>
       </div>

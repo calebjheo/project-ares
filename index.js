@@ -116,7 +116,7 @@ async function takeCoinglassScreenshot(ticker) {
                 instructions: [
                     { "click": "input.MuiAutocomplete-input" },
                     { "wait": 1000 },
-                    { "evaluate": "const clearBtn = document.querySelector('button[aria-label=\"Clear\"]') || document.querySelector('button[title=\"Clear\"]') || document.querySelector('.MuiAutocomplete-clearIndicator') || document.querySelector('button[aria-label=\"Close\"]'); if(clearBtn) clearBtn.click();" },
+                    { "evaluate": "const input = document.querySelector('input.MuiAutocomplete-input'); input.focus(); document.execCommand('selectAll', false, null); document.execCommand('delete', false, null);" },
                     { "wait": 1000 },
                     { "fill": ["input.MuiAutocomplete-input", ticker] },
                     { "wait_for": "li.MuiAutocomplete-option" },
@@ -197,10 +197,10 @@ Here is the EXACT JSON format you must follow:\n` +
                               `"Fear_Greed_Score": "78",\n` +
                               `"Corporate_Sentiment": "Coinbase and Robinhood are bleeding down 4%, indicating total retail exhaustion.",\n` +
                               `"Net_ETF_Flow": "+$285M",\n` +
-                              `"Actionable_Intel": "[Translate this intel into ${lang}]: BTC ETFs saw $335M inflows led by BlackRock, while ETH ETFs saw $50M outflows. Retail sentiment is euphoric at 78. Prepare for a liquidity flush.",\n` +
-                              `"BTC_Kill_Zone": "BTC: $74,800",\n` +
-                              `"ETH_Kill_Zone": "ETH: $2,150",\n` +
-                              `"SOL_Kill_Zone": "SOL: $71.50"\n` +
+                              `"Actionable_Intel": "[Translate this intel into ${lang}]: Analyze current liquidity clusters. Summarize ETF flows and retail sentiment.",\n` +
+                              `"BTC_Kill_Zone": "$74,800",\n` +
+                              `"ETH_Kill_Zone": "$3,850",\n` +
+                              `"SOL_Kill_Zone": "$185"\n` +
                               `}\n\n` +
                               `Please analyze the following crypto risk-management data and format your response into the exact JSON structure above. Use the following live anchor prices:\n` +
                               `BTC Price: $${payload.cryptoData.btcPrice}\n` +
@@ -211,7 +211,8 @@ Here is the EXACT JSON format you must follow:\n` +
                               `Raw Farside ETF Data:\n${payload.etfFlow.rawText}\n\n` +
                               `CRITICAL DIRECTIVES:\n` +
                               `1. "Corporate_Sentiment": You MUST analyze the COIN and HOOD stock prices. Output a 2-3 sentence detailed summary including their exact price changes (e.g. "down 4.08%") and explain what this indicates about retail trading volume, market enthusiasm, and potential retail exhaustion. Provide a highly detailed breakdown. DO NOT OMIT THIS KEY.\n` +
-                              `2. "BTC_Kill_Zone" / "ETH_Kill_Zone" / "SOL_Kill_Zone": Analyze the attached Coinglass liquidation heatmaps. Find the heaviest liquidation clusters STRICTLY BELOW the live anchor prices. IF THE IMAGE IS A CLOUDFLARE CHALLENGE PAGE OR MISSING, YOU MUST OUTPUT "RADAR JAMMED". DO NOT COPY THE EXAMPLE FORMATTING NUMBERS ($74,800, etc) UNDER ANY CIRCUMSTANCES.`
+                              `2. "BTC_Kill_Zone" / "ETH_Kill_Zone" / "SOL_Kill_Zone": Analyze the attached Coinglass liquidation heatmaps. Find the heaviest liquidation clusters STRICTLY BELOW the live anchor prices. Format the values WITH a dollar sign and commas (e.g. "$74,800"). IF THE IMAGE IS A CLOUDFLARE CHALLENGE PAGE OR MISSING, YOU MUST OUTPUT "RADAR JAMMED".\n` +
+                              `3. "Actionable_Intel": Provide a highly detailed 3-4 sentence strategic analysis synthesizing the ETF flows, Kill Zones, and Retail Sentiment. Explain exactly what these metrics combined mean for the market right now.`
                         },
                         ...heatmapParts
                     ]
