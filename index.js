@@ -116,6 +116,8 @@ async function takeCoinglassScreenshot(ticker) {
                 instructions: [
                     { "click": "input.MuiAutocomplete-input" },
                     { "wait": 1000 },
+                    { "evaluate": "const input = document.querySelector('input.MuiAutocomplete-input'); const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set; setter.call(input, ''); input.dispatchEvent(new Event('input', { bubbles: true }));" },
+                    { "wait": 1000 },
                     { "fill": ["input.MuiAutocomplete-input", ticker] },
                     { "wait_for": "li.MuiAutocomplete-option" },
                     { "click": "li.MuiAutocomplete-option" },
