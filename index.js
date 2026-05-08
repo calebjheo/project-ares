@@ -88,7 +88,7 @@ async function scrapeFarsideETF() {
         return { rawText: text };
     } catch (error) {
         console.error('[-] Error scraping Farside:', error.message);
-        return { rawText: `PROXY ERROR: ${error.message}` };
+        return { rawText: `PROXY ERROR: Farside Scraper failed: ${error.message}` };
     }
 }
 
@@ -112,7 +112,7 @@ async function takeCoinglassScreenshot(ticker) {
         return base64Screenshot;
     } catch (error) {
         console.error(`[-] Error scraping Coinglass for ${ticker}:`, error.message);
-        return `PROXY ERROR: ${error.message}`;
+        return `PROXY ERROR: Coinglass Scraper (${ticker}) failed: ${error.message}`;
     }
 }
 
