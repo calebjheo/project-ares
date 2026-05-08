@@ -47,24 +47,29 @@ async function fetchCryptoData() {
 // Function to fetch Corporate Retail Broker Data
 async function fetchCorporateData() {
     try {
-        console.log('[+] Fetching corporate broker data (COIN, HOOD)...');
-        // Dynamically import and instantiate ESM package
-        const YahooFinanceClass = await import('yahoo-finance2').then(m => m.default);
-        const yahooFinance = new YahooFinanceClass();
-        const [coinData, hoodData] = await Promise.all([
-            yahooFinance.quote('COIN'),
-            yahooFinance.quote('HOOD')
-        ]);
-        
-        return {
-            COIN: {
-                price: coinData.regularMarketPrice,
-                changePercent: coinData.regularMarketChangePercent
-            },
-            HOOD: {
-                price: hoodData.regularMarketPrice,
-                changePercent: hoodData.regularMarketChangePercent
+        console.log('[+] Fetching corporate broker data (COIN, HOOD) via ScrapingBee...');
+        if (!process.env.PROXY_API_KEY && process.env.NODE_ENV === 'production') return null;
+
+        const fetchStock = async (ticker) => {
+            // Use fallback if no proxy key
+            if (!process.env.PROXY_API_KEY) {
+                return { price: "200", changePercent: "0" };
             }
+            const url = encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}`);
+            const proxyApi = `https://app.scrapingbee.com/api/v1/?api_key=${process.env.PROXY_API_KEY}&url=${url}`;
+            const response = await axios.get(proxyApi);
+            const price = response.data.chart.result[0].meta.regularMarketPrice;
+            const prevClose = response.data.chart.result[0].meta.chartPreviousClose;
+            const changePercent = (((price - prevClose) / prevClose) * 100).toFixed(2);
+            return { price, changePercent };
+        };
+
+        const coinData = await fetchStock('COIN');
+        const hoodData = await fetchStock('HOOD');
+
+        return {
+            COIN: coinData,
+            HOOD: hoodData
         };
     } catch (error) {
         console.error('[-] Error fetching corporate data:', error.message);
@@ -132,25 +137,25 @@ async function sendToGemini(payload, lang = 'EN') {
         payload.etfFlow.rawText.includes('Cloudflare') ||
         payload.etfFlow.rawText.includes('security') ||
         payload.etfFlow.rawText.includes('Just a moment') ||
-        payload.screenshots.some(s => s && s.includes('PROXY ERROR'));
+        (payload.btcScreenshot && payload.btcScreenshot.includes('PROXY ERROR')) ||
+        (payload.ethScreenshot && payload.ethScreenshot.includes('PROXY ERROR')) ||
+        (payload.solScreenshot && payload.solScreenshot.includes('PROXY ERROR'));
 
     let failureContext = '';
     if (hasFailedScrape) {
         let errorMessage = 'Cloudflare Anti-Bot Protection Blocked the Request';
         if (payload.etfFlow.rawText.includes('PROXY ERROR')) errorMessage = payload.etfFlow.rawText;
-        if (payload.screenshots.find(s => s && s.includes('PROXY ERROR'))) errorMessage = payload.screenshots.find(s => s && s.includes('PROXY ERROR'));
+        if ((payload.btcScreenshot && payload.btcScreenshot.includes('PROXY ERROR')) || (payload.ethScreenshot && payload.ethScreenshot.includes('PROXY ERROR')) || (payload.solScreenshot && payload.solScreenshot.includes('PROXY ERROR'))) errorMessage = "Coinglass screenshot proxy error";
         
         failureContext = `The scraper failed to fetch live data with the following error: "${errorMessage}". You MUST STILL OUTPUT VALID JSON. Set the values of "BTC_Kill_Zone", "ETH_Kill_Zone", and "SOL_Kill_Zone" to "RADAR JAMMED - RETRYING". Set "Net_ETF_Flow" to "RADAR JAMMED". Set "Corporate_Sentiment" to "RADAR JAMMED". In the "Actionable_Intel" field, you MUST explain that the radar is jammed because of this error: ${errorMessage}. DO NOT copy the numbers from the example structure. DO NOT hallucinate inflows or outflows. Say explicitly that data is jammed.\n`;
     }
     
     let heatmapParts = [];
-    if (payload.screenshots && payload.screenshots.length > 0) {
-        payload.screenshots.forEach(s => {
-            if (s && !s.includes('PROXY ERROR')) {
-                heatmapParts.push({ inline_data: { mime_type: "image/png", data: s } });
-            }
-        });
-    }
+    [payload.btcScreenshot, payload.ethScreenshot, payload.solScreenshot].forEach(s => {
+        if (s && typeof s === 'string' && !s.includes('PROXY ERROR')) {
+            heatmapParts.push({ inline_data: { mime_type: "image/png", data: s } });
+        }
+    });
 
     const corpPrompt = payload.corpData ? 
         `COIN: Price $${payload.corpData.COIN.price}, 24h Change: ${payload.corpData.COIN.changePercent}%\nHOOD: Price $${payload.corpData.HOOD.price}, 24h Change: ${payload.corpData.HOOD.changePercent}%` 
@@ -283,19 +288,20 @@ async function runBackgroundSweep() {
     console.log('[+] Starting background data sweep...');
     
     try {
-        const [cryptoData, etfFlow, btcScreenshot, ethScreenshot, solScreenshot, corpData] = await Promise.all([
-            fetchCryptoData(),
-            scrapeFarsideETF(),
-            takeCoinglassScreenshot('BTC'),
-            takeCoinglassScreenshot('ETH'),
-            takeCoinglassScreenshot('SOL'),
-            fetchCorporateData()
-        ]);
+        // Run sequentially to prevent 429 Too Many Requests from ScrapingBee's 1 concurrent request limit on free tiers
+        const cryptoData = await fetchCryptoData();
+        const etfFlow = await scrapeFarsideETF();
+        const btcScreenshot = await takeCoinglassScreenshot('BTC');
+        const ethScreenshot = await takeCoinglassScreenshot('ETH');
+        const solScreenshot = await takeCoinglassScreenshot('SOL');
+        const corpData = await fetchCorporateData();
         
         const payload = {
             cryptoData,
             etfFlow,
-            screenshots: [btcScreenshot, ethScreenshot, solScreenshot],
+            btcScreenshot,
+            ethScreenshot,
+            solScreenshot,
             corpData
         };
         
