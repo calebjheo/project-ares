@@ -80,11 +80,13 @@ async function scrapeFarsideETF() {
     console.log('[+] Scraping Farside ETF data via ScrapingBee API...');
     try {
         const url = encodeURIComponent('https://farside.co.uk/?p=997');
-        const proxyApi = `https://app.scrapingbee.com/api/v1/?api_key=${process.env.PROXY_API_KEY}&url=${url}&render_js=true&stealth_proxy=true`;
+        const extractRules = encodeURIComponent('{"body_text":"body"}');
+        const proxyApi = `https://app.scrapingbee.com/api/v1/?api_key=${process.env.PROXY_API_KEY}&url=${url}&render_js=true&stealth_proxy=true&extract_rules=${extractRules}`;
         
         const response = await axios.get(proxyApi, { timeout: 45000 });
-        // Instead of parsing DOM, we just extract text from the raw HTML payload roughly
-        const text = response.data.replace(/<[^>]*>?/gm, ' ').substring(0, 3000);
+        
+        // ScrapingBee returns a JSON object when using extract_rules
+        const text = response.data && response.data.body_text ? response.data.body_text.substring(0, 3000) : JSON.stringify(response.data).substring(0, 3000);
         return { rawText: text };
     } catch (error) {
         console.error('[-] Error scraping Farside:', error.message);
@@ -101,7 +103,7 @@ async function takeCoinglassScreenshot(ticker) {
     console.log(`[+] Taking Coinglass screenshot for ${ticker} via ScrapingBee API...`);
     try {
         const targetUrl = encodeURIComponent(`https://www.coinglass.com/pro/futures/LiquidationHeatMap?symbol=${ticker}`);
-        const proxyApi = `https://app.scrapingbee.com/api/v1/?api_key=${process.env.PROXY_API_KEY}&url=${targetUrl}&render_js=true&stealth_proxy=true&screenshot=true&window_width=1920&window_height=1080&wait=3000`;
+        const proxyApi = `https://app.scrapingbee.com/api/v1/?api_key=${process.env.PROXY_API_KEY}&url=${targetUrl}&render_js=true&stealth_proxy=true&premium_proxy=true&screenshot=true&window_width=1920&window_height=1080&wait=3000`;
         
         const response = await axios.get(proxyApi, { 
             responseType: 'arraybuffer',
