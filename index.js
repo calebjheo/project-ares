@@ -113,9 +113,11 @@ async function takeCoinglassScreenshot(ticker) {
         // Always execute server-side Puppeteer instructions to bypass Cloudflare and explicitly select the asset
         const jsScenario = {
             instructions: [
+                { "wait_for": "input.MuiAutocomplete-input" },
+                { "wait": 1000 },
                 { "click": "input.MuiAutocomplete-input" },
                 { "wait": 1000 },
-                { "evaluate": "const input = document.querySelector('input.MuiAutocomplete-input'); input.focus(); document.execCommand('selectAll', false, null); document.execCommand('delete', false, null);" },
+                { "evaluate": "const clearBtn = document.querySelector('.MuiAutocomplete-clearIndicator') || document.querySelector('button[aria-label=\"Clear\"]'); if(clearBtn) { clearBtn.dispatchEvent(new MouseEvent('mousedown', {bubbles: true})); clearBtn.click(); }" },
                 { "wait": 1000 },
                 { "fill": ["input.MuiAutocomplete-input", ticker] },
                 { "wait_for": "li.MuiAutocomplete-option" },
