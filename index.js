@@ -124,7 +124,8 @@ async function takeCoinglassScreenshot(ticker) {
                 { "wait": 1000 },
                 { "fill": ["#target-heatmap-input", ticker] },
                 { "wait_for": "li.MuiAutocomplete-option" },
-                { "click": "li.MuiAutocomplete-option" },
+                { "wait": 1000 },
+                { "evaluate": "const opt = document.querySelector('li.MuiAutocomplete-option'); if(opt) { opt.dispatchEvent(new MouseEvent('mousedown', {bubbles: true})); opt.click(); opt.dispatchEvent(new MouseEvent('mouseup', {bubbles: true})); }" },
                 { "wait": 10000 }
             ]
         };
