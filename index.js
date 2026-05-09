@@ -120,7 +120,7 @@ async function takeCoinglassScreenshot(ticker) {
             instructions: [
                 { "wait_for": "input.MuiAutocomplete-input" },
                 { "wait": 1000 },
-                { "evaluate": "const inputs = document.querySelectorAll('input.MuiAutocomplete-input'); for(let input of inputs) { if(input.value && input.value.includes('BTC')) { input.id = 'target-heatmap-input'; const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set; setter.call(input, ''); input.dispatchEvent(new Event('input', {bubbles: true})); input.dispatchEvent(new Event('change', {bubbles: true})); break; } }" },
+                { "evaluate": "const inputs = document.querySelectorAll('input.MuiAutocomplete-input'); for(let input of inputs) { if(input.value && input.value.includes('BTC')) { input.id = 'target-heatmap-input'; input.focus(); input.setSelectionRange(0, input.value.length); break; } }" },
                 { "wait": 1000 },
                 { "fill": ["#target-heatmap-input", ticker] },
                 { "wait_for": "li.MuiAutocomplete-option" },
@@ -242,9 +242,9 @@ Here is the EXACT JSON format you must follow:\n` +
                               `${corpPrompt}\n` +
                               `Raw Farside ETF Data:\n${payload.etfFlow.rawText}\n\n` +
                               `CRITICAL DIRECTIVES:\n` +
-                              `1. "Corporate_Sentiment": You MUST analyze the COIN and HOOD stock prices. Output a 2-3 sentence detailed summary including their exact price changes (e.g. "down 4.08%") and explain what this indicates about retail trading volume, market enthusiasm, and potential retail exhaustion. Provide a highly detailed breakdown. DO NOT OMIT THIS KEY.\n` +
+                              `1. "Corporate_Sentiment": You MUST analyze the COIN and HOOD stock prices. Output a 2-3 sentence detailed summary. Provide a highly detailed breakdown. YOU MUST TRANSLATE THIS ENTIRE SUMMARY INTO ${lang}. DO NOT OMIT THIS KEY.\n` +
                               `2. "BTC_Kill_Zone" / "ETH_Kill_Zone" / "SOL_Kill_Zone": Analyze the attached Coinglass liquidation heatmaps. Find the heaviest liquidation clusters STRICTLY BELOW the live anchor prices. Format the values WITH a dollar sign and commas (e.g. "$74,800"). IF THE IMAGE IS A CLOUDFLARE CHALLENGE PAGE OR MISSING, YOU MUST OUTPUT "RADAR JAMMED".\n` +
-                              `3. "Actionable_Intel": Provide a highly detailed 3-4 sentence strategic analysis synthesizing ONLY the institutional ETF flows and Kill Zones. Explain exactly what Wall Street's activity and the liquidation clusters mean for the market right now. DO NOT mention retail sentiment, COIN, or HOOD, as that is covered separately.`
+                              `3. "Actionable_Intel": Provide a highly detailed 3-4 sentence strategic analysis synthesizing ONLY the institutional ETF flows and Kill Zones. YOU MUST TRANSLATE THIS ENTIRE ANALYSIS INTO ${lang}. DO NOT mention retail sentiment, COIN, or HOOD, as that is covered separately.`
                         },
                         ...heatmapParts
                     ]
