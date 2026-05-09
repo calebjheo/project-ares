@@ -277,6 +277,9 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
+// Trust the Render proxy so rate limiting works per user IP instead of banning everyone
+app.set('trust proxy', 1);
+
 // Rate Limiting
 const riskLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
