@@ -126,7 +126,9 @@ async function takeCoinglassScreenshot(ticker) {
                 { "wait_for": "li.MuiAutocomplete-option" },
                 { "wait": 1000 },
                 { "evaluate": "const opt = document.querySelector('li.MuiAutocomplete-option'); if(opt) { opt.dispatchEvent(new MouseEvent('mousedown', {bubbles: true})); opt.click(); opt.dispatchEvent(new MouseEvent('mouseup', {bubbles: true})); }" },
-                { "wait": 10000 }
+                { "wait": 5000 },
+                { "evaluate": "const style = document.createElement('style'); style.innerHTML = '* { filter: none !important; backdrop-filter: none !important; } div[role=\"dialog\"], .MuiDialog-root, .MuiModal-root { display: none !important; opacity: 0 !important; visibility: hidden !important; }'; document.head.appendChild(style);" },
+                { "wait": 5000 }
             ]
         };
         
