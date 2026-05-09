@@ -116,38 +116,25 @@ async function takeCoinglassScreenshot(ticker) {
 
     console.log(`[+] Taking screenshot for ${ticker} via ScrapingBee API...`);
     try {
-        let url = 'https://www.coinglass.com/pro/futures/LiquidationHeatMap';
-        let jsScenario = {};
-
-        if (ticker === 'BTC') {
-            jsScenario = {
-                instructions: [
-                    { "wait_for": "input.MuiAutocomplete-input" },
-                    { "wait": 1000 },
-                    { "evaluate": "const inputs = document.querySelectorAll('input.MuiAutocomplete-input'); for(let input of inputs) { if(input.value && input.value.includes('BTC')) { input.id = 'target-heatmap-input'; input.focus(); input.setSelectionRange(0, input.value.length); break; } }" },
-                    { "wait": 1000 },
-                    { "fill": ["#target-heatmap-input", ticker] },
-                    { "wait_for": "li.MuiAutocomplete-option" },
-                    { "wait": 1000 },
-                    { "evaluate": "const opt = document.querySelector('li.MuiAutocomplete-option'); if(opt) { opt.dispatchEvent(new MouseEvent('mousedown', {bubbles: true})); opt.click(); opt.dispatchEvent(new MouseEvent('mouseup', {bubbles: true})); }" },
-                    { "wait": 5000 },
-                    { "evaluate": "const style = document.createElement('style'); style.innerHTML = '* { filter: none !important; backdrop-filter: none !important; } div[role=\"dialog\"], .MuiDialog-root, .MuiModal-root { display: none !important; opacity: 0 !important; visibility: hidden !important; }'; document.head.appendChild(style);" },
-                    { "wait": 15000 }
-                ]
-            };
-        } else {
-            // Use CoinAnk for Altcoins to bypass Coinglass paywall
-            url = `https://coinank.com/liqMap?coin=${ticker}`;
-            jsScenario = {
-                instructions: [
-                    { "wait": 15000 }
-                ]
-            };
-        }
+        const jsScenario = {
+            instructions: [
+                { "wait_for": "input.MuiAutocomplete-input" },
+                { "wait": 1000 },
+                { "evaluate": "const inputs = document.querySelectorAll('input.MuiAutocomplete-input'); for(let input of inputs) { if(input.value && input.value.includes('BTC')) { input.id = 'target-heatmap-input'; input.focus(); input.setSelectionRange(0, input.value.length); break; } }" },
+                { "wait": 1000 },
+                { "fill": ["#target-heatmap-input", ticker] },
+                { "wait_for": "li.MuiAutocomplete-option" },
+                { "wait": 1000 },
+                { "evaluate": "const opt = document.querySelector('li.MuiAutocomplete-option'); if(opt) { opt.dispatchEvent(new MouseEvent('mousedown', {bubbles: true})); opt.click(); opt.dispatchEvent(new MouseEvent('mouseup', {bubbles: true})); }" },
+                { "wait": 5000 },
+                { "evaluate": "const style = document.createElement('style'); style.innerHTML = '* { filter: none !important; backdrop-filter: none !important; } div[role=\"dialog\"], .MuiDialog-root, .MuiModal-root { display: none !important; opacity: 0 !important; visibility: hidden !important; }'; document.head.appendChild(style);" },
+                { "wait": 15000 }
+            ]
+        };
         
         const params = {
             api_key: process.env.PROXY_API_KEY,
-            url: url,
+            url: 'https://www.coinglass.com/pro/futures/LiquidationHeatMap',
             render_js: 'true',
             stealth_proxy: 'true',
             premium_proxy: 'true',
@@ -579,6 +566,30 @@ app.get('/api/altcoin', async (req, res) => {
 
 app.get('/api/debug-cache', (req, res) => {
     res.json(sharedPayloadCache);
+});
+
+app.get('/api/test-scrape', async (req, res) => {
+    try {
+        const testUrl = req.query.url || 'https://coinank.com/liquidation-heatmap';
+        console.log('[+] Testing scrape for:', testUrl);
+        const response = await axios.get('https://app.scrapingbee.com/api/v1/', { 
+            params: {
+                api_key: process.env.PROXY_API_KEY,
+                url: testUrl,
+                render_js: 'true',
+                stealth_proxy: 'true',
+                premium_proxy: 'true',
+                screenshot: 'true',
+                window_width: '1920',
+                window_height: '1080',
+                wait: '15000'
+            },
+            responseType: 'arraybuffer'
+        });
+        res.json({ success: true, status: response.status, screenshotLength: response.data.length });
+    } catch (error) {
+        res.json({ success: false, error: error.message, status: error.response?.status, dataLength: error.response?.data?.length });
+    }
 });
 
 // Do not execute automatically if imported as a module

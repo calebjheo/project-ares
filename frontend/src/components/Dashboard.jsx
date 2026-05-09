@@ -236,8 +236,8 @@ const DashboardContent = () => {
           const order = payload.o;
           const size = (parseFloat(order.q) * parseFloat(order.p));
           
-          // Only show liquidations over $10,000 to reduce noise
-          if (size > 10000) {
+          // Only show liquidations over $1,000 to keep the ticker highly active
+          if (size > 1000) {
             const isLong = order.S === 'SELL'; // If forced to SELL, it was a LONG being liquidated
             const formattedSize = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(size);
             const sideText = isLong ? 'Longs Liquidated' : 'Shorts Liquidated';
