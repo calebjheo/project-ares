@@ -194,13 +194,13 @@ async function sendToGemini(payload, lang = 'EN') {
         btcPrompt = `"BTC_Kill_Zone": "RADAR JAMMED"`;
         failureContext += `BTC Scraper Error: ${payload.btcScreenshot}. `;
     }
-    if (payload.ethScreenshot && payload.ethScreenshot.includes('PROXY ERROR')) {
-        ethPrompt = `"ETH_Kill_Zone": "RADAR JAMMED"`;
-        failureContext += `ETH Scraper Error: ${payload.ethScreenshot}. `;
+    if (payload.ethScreenshot && (payload.ethScreenshot.includes('PROXY ERROR') || payload.ethScreenshot.includes('PAYWALLED'))) {
+        ethPrompt = `"ETH_Kill_Zone": "PAYWALLED"`;
+        if (payload.ethScreenshot.includes('PROXY ERROR')) failureContext += `ETH Scraper Error: ${payload.ethScreenshot}. `;
     }
-    if (payload.solScreenshot && payload.solScreenshot.includes('PROXY ERROR')) {
-        solPrompt = `"SOL_Kill_Zone": "RADAR JAMMED"`;
-        failureContext += `SOL Scraper Error: ${payload.solScreenshot}. `;
+    if (payload.solScreenshot && (payload.solScreenshot.includes('PROXY ERROR') || payload.solScreenshot.includes('PAYWALLED'))) {
+        solPrompt = `"SOL_Kill_Zone": "PAYWALLED"`;
+        if (payload.solScreenshot.includes('PROXY ERROR')) failureContext += `SOL Scraper Error: ${payload.solScreenshot}. `;
     }
     if (payload.etfFlow.rawText.includes('PROXY ERROR') || payload.etfFlow.rawText.includes('Cloudflare')) {
         failureContext += `ETF Scraper Error: ${payload.etfFlow.rawText}. `;
@@ -212,7 +212,7 @@ async function sendToGemini(payload, lang = 'EN') {
     
     let heatmapParts = [];
     [payload.btcScreenshot, payload.ethScreenshot, payload.solScreenshot].forEach(s => {
-        if (s && typeof s === 'string' && !s.includes('PROXY ERROR')) {
+        if (s && typeof s === 'string' && !s.includes('PROXY ERROR') && !s.includes('PAYWALLED')) {
             heatmapParts.push({ inline_data: { mime_type: "image/png", data: s } });
         }
     });
