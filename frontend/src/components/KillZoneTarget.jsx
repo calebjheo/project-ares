@@ -46,7 +46,7 @@ const KillZoneTarget = ({ btcTarget, ethTarget, solTarget, isProUser, onUpgradeC
           
           <div className="flex flex-col items-center">
             <div className="text-gray-500 text-[10px] uppercase tracking-widest mb-1">{t('ethCluster')}</div>
-            <div className={`font-sans font-bold text-white tracking-tight shadow-blue-500/20 drop-shadow-[0_0_15px_rgba(59,130,246,0.4)] ${ethTarget?.includes('JAMMED') ? 'text-xs md:text-sm text-red-400' : 'text-2xl md:text-3xl'}`}>
+            <div className={`font-sans font-bold text-white tracking-tight shadow-blue-500/20 drop-shadow-[0_0_15px_rgba(59,130,246,0.4)] ${(ethTarget?.includes('JAMMED') || ethTarget?.includes('PAYWALLED')) ? 'text-xs md:text-sm text-red-400' : 'text-2xl md:text-3xl'}`}>
               {ethTarget || '---'}
             </div>
           </div>
@@ -57,7 +57,7 @@ const KillZoneTarget = ({ btcTarget, ethTarget, solTarget, isProUser, onUpgradeC
 
           <div className="flex flex-col items-center">
             <div className="text-gray-500 text-[10px] uppercase tracking-widest mb-1">{t('solCluster')}</div>
-            <div className={`font-sans font-bold text-white tracking-tight shadow-purple-500/20 drop-shadow-[0_0_15px_rgba(168,85,247,0.4)] ${solTarget?.includes('JAMMED') ? 'text-xs md:text-sm text-red-400' : 'text-2xl md:text-3xl'}`}>
+            <div className={`font-sans font-bold text-white tracking-tight shadow-purple-500/20 drop-shadow-[0_0_15px_rgba(168,85,247,0.4)] ${(solTarget?.includes('JAMMED') || solTarget?.includes('PAYWALLED')) ? 'text-xs md:text-sm text-red-400' : 'text-2xl md:text-3xl'}`}>
               {solTarget || '---'}
             </div>
           </div>

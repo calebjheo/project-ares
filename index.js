@@ -543,6 +543,14 @@ app.get('/api/altcoin', async (req, res) => {
 
     console.log(`API Request: Fetching altcoin radar for ${ticker}...`);
     try {
+        // Enforce BTC-Only Protocol: Coinglass paywalled altcoin heatmaps
+        if (ticker !== 'BTC') {
+            return res.json({
+                "Kill_Zone": "PAYWALLED",
+                "Threat_Level": "OFFLINE"
+            });
+        }
+
         const screenshot = await takeCoinglassScreenshot(ticker);
         const jsonResult = await analyzeAltcoinHeatmap(ticker, screenshot);
         
