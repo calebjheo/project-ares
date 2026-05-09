@@ -115,11 +115,9 @@ async function takeCoinglassScreenshot(ticker) {
             instructions: [
                 { "wait_for": "input.MuiAutocomplete-input" },
                 { "wait": 1000 },
-                { "click": "input.MuiAutocomplete-input" },
+                { "evaluate": "const inputs = document.querySelectorAll('input.MuiAutocomplete-input'); for(let input of inputs) { if(input.value && input.value.includes('BTC')) { input.id = 'target-heatmap-input'; const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set; setter.call(input, ''); input.dispatchEvent(new Event('input', {bubbles: true})); input.dispatchEvent(new Event('change', {bubbles: true})); break; } }" },
                 { "wait": 1000 },
-                { "evaluate": "const clearBtn = document.querySelector('.MuiAutocomplete-clearIndicator') || document.querySelector('button[aria-label=\"Clear\"]'); if(clearBtn) { clearBtn.dispatchEvent(new MouseEvent('mousedown', {bubbles: true})); clearBtn.click(); }" },
-                { "wait": 1000 },
-                { "fill": ["input.MuiAutocomplete-input", ticker] },
+                { "fill": ["#target-heatmap-input", ticker] },
                 { "wait_for": "li.MuiAutocomplete-option" },
                 { "click": "li.MuiAutocomplete-option" },
                 { "wait": 10000 }
@@ -159,14 +157,28 @@ async function sendToGemini(payload, lang = 'EN') {
         (payload.solScreenshot && payload.solScreenshot.includes('PROXY ERROR'));
 
     let failureContext = '';
-    if (hasFailedScrape) {
-        let errorMessage = 'Cloudflare Anti-Bot Protection Blocked the Request';
-        if (payload.etfFlow.rawText.includes('PROXY ERROR')) errorMessage = payload.etfFlow.rawText;
-        if (payload.btcScreenshot && typeof payload.btcScreenshot === 'string' && payload.btcScreenshot.includes('PROXY ERROR')) errorMessage = payload.btcScreenshot;
-        else if (payload.ethScreenshot && typeof payload.ethScreenshot === 'string' && payload.ethScreenshot.includes('PROXY ERROR')) errorMessage = payload.ethScreenshot;
-        else if (payload.solScreenshot && typeof payload.solScreenshot === 'string' && payload.solScreenshot.includes('PROXY ERROR')) errorMessage = payload.solScreenshot;
-        
-        failureContext = `The scraper failed to fetch live data with the following error: "${errorMessage}". You MUST STILL OUTPUT VALID JSON. Set the values of "BTC_Kill_Zone", "ETH_Kill_Zone", and "SOL_Kill_Zone" to "RADAR JAMMED - RETRYING". Set "Net_ETF_Flow" to "RADAR JAMMED". Set "Corporate_Sentiment" to "RADAR JAMMED". In the "Actionable_Intel" field, you MUST explain that the radar is jammed because of this error: ${errorMessage}. DO NOT copy the numbers from the example structure. DO NOT hallucinate inflows or outflows. Say explicitly that data is jammed.\n`;
+    let btcPrompt = `"BTC_Kill_Zone": "$74,800"`;
+    let ethPrompt = `"ETH_Kill_Zone": "$3,850"`;
+    let solPrompt = `"SOL_Kill_Zone": "$185"`;
+
+    if (payload.btcScreenshot && payload.btcScreenshot.includes('PROXY ERROR')) {
+        btcPrompt = `"BTC_Kill_Zone": "RADAR JAMMED"`;
+        failureContext += `BTC Scraper Error: ${payload.btcScreenshot}. `;
+    }
+    if (payload.ethScreenshot && payload.ethScreenshot.includes('PROXY ERROR')) {
+        ethPrompt = `"ETH_Kill_Zone": "RADAR JAMMED"`;
+        failureContext += `ETH Scraper Error: ${payload.ethScreenshot}. `;
+    }
+    if (payload.solScreenshot && payload.solScreenshot.includes('PROXY ERROR')) {
+        solPrompt = `"SOL_Kill_Zone": "RADAR JAMMED"`;
+        failureContext += `SOL Scraper Error: ${payload.solScreenshot}. `;
+    }
+    if (payload.etfFlow.rawText.includes('PROXY ERROR') || payload.etfFlow.rawText.includes('Cloudflare')) {
+        failureContext += `ETF Scraper Error: ${payload.etfFlow.rawText}. `;
+    }
+
+    if (failureContext) {
+        failureContext = `SOME SCRAPERS FAILED: ${failureContext}. For any jammed metrics, you MUST output "RADAR JAMMED". Do not hallucinate data for jammed metrics.\n`;
     }
     
     let heatmapParts = [];
@@ -198,9 +210,9 @@ Here is the EXACT JSON format you must follow:\n` +
                               `"Corporate_Sentiment": "Coinbase and Robinhood are bleeding down 4%, indicating total retail exhaustion.",\n` +
                               `"Net_ETF_Flow": "+$285M",\n` +
                               `"Actionable_Intel": "[Translate this intel into ${lang}]: Analyze current liquidity clusters. Summarize ETF flows and retail sentiment.",\n` +
-                              `"BTC_Kill_Zone": "$74,800",\n` +
-                              `"ETH_Kill_Zone": "$3,850",\n` +
-                              `"SOL_Kill_Zone": "$185"\n` +
+                              `${btcPrompt},\n` +
+                              `${ethPrompt},\n` +
+                              `${solPrompt}\n` +
                               `}\n\n` +
                               `Please analyze the following crypto risk-management data and format your response into the exact JSON structure above. Use the following live anchor prices:\n` +
                               `BTC Price: $${payload.cryptoData.btcPrice}\n` +

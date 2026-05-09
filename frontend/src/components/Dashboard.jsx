@@ -329,6 +329,7 @@ const DashboardContent = () => {
                 <option value="KO" className="bg-slate-900">KO</option>
                 <option value="ES" className="bg-slate-900">ES</option>
                 <option value="JP" className="bg-slate-900">JP</option>
+                <option value="ZH" className="bg-slate-900">ZH</option>
               </select>
             </div>
           </div>
