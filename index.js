@@ -132,19 +132,25 @@ async function takeCoinglassScreenshot(ticker) {
             ]
         };
         
+        const params = {
+            api_key: process.env.PROXY_API_KEY,
+            url: 'https://www.coinglass.com/pro/futures/LiquidationHeatMap',
+            render_js: 'true',
+            stealth_proxy: 'true',
+            premium_proxy: 'true',
+            screenshot: 'true',
+            window_width: '1920',
+            window_height: '1080',
+            wait: '10000',
+            js_scenario: JSON.stringify(jsScenario)
+        };
+
+        if (process.env.COINGLASS_COOKIES) {
+            params.cookies = process.env.COINGLASS_COOKIES;
+        }
+
         const response = await axios.get('https://app.scrapingbee.com/api/v1/', { 
-            params: {
-                api_key: process.env.PROXY_API_KEY,
-                url: 'https://www.coinglass.com/pro/futures/LiquidationHeatMap',
-                render_js: 'true',
-                stealth_proxy: 'true',
-                premium_proxy: 'true',
-                screenshot: 'true',
-                window_width: '1920',
-                window_height: '1080',
-                wait: '10000',
-                js_scenario: JSON.stringify(jsScenario)
-            },
+            params,
             responseType: 'arraybuffer',
             timeout: 120000 
         });
