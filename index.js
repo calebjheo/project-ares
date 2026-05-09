@@ -572,18 +572,22 @@ app.get('/api/test-scrape', async (req, res) => {
     try {
         const testUrl = req.query.url || 'https://coinank.com/liquidation-heatmap';
         console.log('[+] Testing scrape for:', testUrl);
+        const params = {
+            api_key: process.env.PROXY_API_KEY,
+            url: testUrl,
+            render_js: 'true',
+            stealth_proxy: 'true',
+            premium_proxy: 'true',
+            screenshot: 'true',
+            window_width: '1920',
+            window_height: '1080',
+            wait: '15000'
+        };
+        if (req.query.country_code) {
+            params.country_code = req.query.country_code;
+        }
         const response = await axios.get('https://app.scrapingbee.com/api/v1/', { 
-            params: {
-                api_key: process.env.PROXY_API_KEY,
-                url: testUrl,
-                render_js: 'true',
-                stealth_proxy: 'true',
-                premium_proxy: 'true',
-                screenshot: 'true',
-                window_width: '1920',
-                window_height: '1080',
-                wait: '15000'
-            },
+            params: params,
             responseType: 'arraybuffer'
         });
         res.json({ success: true, status: response.status, screenshotLength: response.data.length });
