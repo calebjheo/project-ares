@@ -84,18 +84,27 @@ async function scrapeFarsideETF() {
     
     console.log('[+] Scraping Farside ETF data via ScrapingBee API...');
     try {
-        const url = encodeURIComponent('https://farside.co.uk/?p=997');
-        const extractRules = encodeURIComponent('{"body_text":"body"}');
-        const proxyApi = `https://app.scrapingbee.com/api/v1/?api_key=${process.env.PROXY_API_KEY}&url=${url}&render_js=true&stealth_proxy=true&extract_rules=${extractRules}`;
-        
-        const response = await axios.get(proxyApi, { timeout: 120000 });
+        const response = await axios.get('https://app.scrapingbee.com/api/v1/', { 
+            params: {
+                api_key: process.env.PROXY_API_KEY,
+                url: 'https://farside.co.uk/?p=997',
+                render_js: 'true',
+                stealth_proxy: 'true',
+                extract_rules: '{"body_text":"body"}'
+            },
+            timeout: 120000 
+        });
         
         // ScrapingBee returns a JSON object when using extract_rules
         const text = response.data && response.data.body_text ? response.data.body_text.substring(0, 3000) : JSON.stringify(response.data).substring(0, 3000);
         return { rawText: text };
     } catch (error) {
-        console.error('[-] Error scraping Farside:', error.message);
-        return { rawText: `PROXY ERROR: Farside Scraper failed: ${error.message}` };
+        let details = error.message;
+        if (error.response && error.response.data) {
+             details += " | ScrapingBee Data: " + Buffer.from(error.response.data).toString('utf-8');
+        }
+        console.error('[-] Error scraping Farside:', details);
+        return { rawText: `PROXY ERROR: Farside Scraper failed: ${details}` };
     }
 }
 
@@ -107,10 +116,6 @@ async function takeCoinglassScreenshot(ticker) {
 
     console.log(`[+] Taking Coinglass screenshot for ${ticker} via ScrapingBee API...`);
     try {
-        const targetUrl = encodeURIComponent(`https://www.coinglass.com/pro/futures/LiquidationHeatMap`);
-        let proxyApi = `https://app.scrapingbee.com/api/v1/?api_key=${process.env.PROXY_API_KEY}&url=${targetUrl}&render_js=true&stealth_proxy=true&premium_proxy=true&screenshot=true&window_width=1920&window_height=1080&wait=10000`;
-        
-        // Always execute server-side Puppeteer instructions to bypass Cloudflare and explicitly select the asset
         const jsScenario = {
             instructions: [
                 { "wait_for": "input.MuiAutocomplete-input" },
@@ -123,9 +128,20 @@ async function takeCoinglassScreenshot(ticker) {
                 { "wait": 10000 }
             ]
         };
-        proxyApi += `&js_scenario=${encodeURIComponent(JSON.stringify(jsScenario))}`;
         
-        const response = await axios.get(proxyApi, { 
+        const response = await axios.get('https://app.scrapingbee.com/api/v1/', { 
+            params: {
+                api_key: process.env.PROXY_API_KEY,
+                url: 'https://www.coinglass.com/pro/futures/LiquidationHeatMap',
+                render_js: 'true',
+                stealth_proxy: 'true',
+                premium_proxy: 'true',
+                screenshot: 'true',
+                window_width: '1920',
+                window_height: '1080',
+                wait: '10000',
+                js_scenario: JSON.stringify(jsScenario)
+            },
             responseType: 'arraybuffer',
             timeout: 120000 
         });
@@ -133,8 +149,12 @@ async function takeCoinglassScreenshot(ticker) {
         const base64Screenshot = Buffer.from(response.data, 'binary').toString('base64');
         return base64Screenshot;
     } catch (error) {
-        console.error(`[-] Error scraping Coinglass for ${ticker}:`, error.message);
-        return `PROXY ERROR: Coinglass Scraper (${ticker}) failed: ${error.message}`;
+        let details = error.message;
+        if (error.response && error.response.data) {
+             details += " | ScrapingBee Data: " + Buffer.from(error.response.data).toString('utf-8');
+        }
+        console.error(`[-] Error scraping Coinglass for ${ticker}:`, details);
+        return `PROXY ERROR: Coinglass Scraper (${ticker}) failed: ${details}`;
     }
 }
 
@@ -531,6 +551,10 @@ app.get('/api/altcoin', async (req, res) => {
     }
 });
 
+
+app.get('/api/debug-cache', (req, res) => {
+    res.json(sharedPayloadCache);
+});
 
 // Do not execute automatically if imported as a module
 if (require.main === module) {

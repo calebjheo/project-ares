@@ -221,7 +221,7 @@ const DashboardContent = () => {
     const interval = setInterval(fetchRiskData, 45000); // 45 seconds polling
     
     return () => clearInterval(interval);
-  }, []);
+  }, [language]);
 
   // Live Whale Watch WebSocket
   useEffect(() => {
