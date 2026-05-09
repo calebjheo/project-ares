@@ -356,8 +356,10 @@ async function runBackgroundSweep() {
         const cryptoData = await fetchCryptoData();
         const etfFlow = await scrapeFarsideETF();
         const btcScreenshot = await takeCoinglassScreenshot('BTC');
-        const ethScreenshot = await takeCoinglassScreenshot('ETH');
-        const solScreenshot = await takeCoinglassScreenshot('SOL');
+        
+        // Enforce BTC-Only Protocol on background sweep
+        const ethScreenshot = "PAYWALLED";
+        const solScreenshot = "PAYWALLED";
         const corpData = await fetchCorporateData();
         
         const payload = {
