@@ -123,7 +123,7 @@ async function takeCoinglassScreenshot(ticker) {
                 { "evaluate": "if(window.location.href.includes('login') || document.body.innerText.includes('Sign in')) throw new Error('AUTH_FAILED');" },
                 { "wait_for": "input.MuiAutocomplete-input" },
                 { "wait": 1000 },
-                { "evaluate": "const inputs = document.querySelectorAll('input.MuiAutocomplete-input'); for(let input of inputs) { if(input.value && input.value.includes('BTC')) { input.id = 'target-heatmap-input'; input.focus(); input.setSelectionRange(0, input.value.length); break; } }" },
+                { "evaluate": "const input = document.querySelector('input.MuiAutocomplete-input'); if(input) { input.id = 'target-heatmap-input'; input.focus(); input.setSelectionRange(0, input.value.length); }" },
                 { "wait": 1000 },
                 { "fill": ["#target-heatmap-input", ticker] },
                 { "wait_for": "li.MuiAutocomplete-option" },
@@ -230,7 +230,7 @@ async function sendToGemini(payload, lang = 'EN') {
     
     let heatmapParts = [];
     [payload.btcScreenshot, payload.ethScreenshot, payload.solScreenshot].forEach(s => {
-        if (s && typeof s === 'string' && !s.includes('PROXY ERROR') && !s.includes('PAYWALLED')) {
+        if (s && typeof s === 'string' && !s.includes('PROXY ERROR') && !s.includes('PAYWALLED') && !s.includes('AUTH_FAILED')) {
             heatmapParts.push({ inline_data: { mime_type: "image/png", data: s } });
         }
     });

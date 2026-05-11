@@ -276,6 +276,26 @@ const DashboardContent = () => {
       }
     };
     
+    ws.onerror = () => {
+      setLiquidations([{
+        text: 'WHALE WATCH: LIVE UPLINK BLOCKED BY REGIONAL FIREWALL.',
+        icon: '⚠️',
+        colorClass: 'text-amber-500',
+        id: 'firewall_err'
+      }]);
+    };
+
+    ws.onclose = () => {
+      if (liquidations.length === 0) {
+        setLiquidations([{
+          text: 'WHALE WATCH: CONNECTION DROPPED.',
+          icon: '⚠️',
+          colorClass: 'text-amber-500',
+          id: 'close_err'
+        }]);
+      }
+    };
+    
     return () => ws.close();
   }, [isProUser]);
 
