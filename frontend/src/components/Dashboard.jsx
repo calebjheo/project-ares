@@ -179,6 +179,7 @@ const DashboardContent = () => {
     return false;
   });
   const [lastSweep, setLastSweep] = useState('');
+  const [retryCounter, setRetryCounter] = useState(0);
 
   useEffect(() => {
     // MVP Auth Logic: Check URL for success parameter from Stripe
@@ -198,20 +199,38 @@ const DashboardContent = () => {
     const formattedTime = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
     setLastSweep(`${formattedDate} | ${formattedTime}`);
 
+    let isInitialLoad = true;
+
     const fetchRiskData = async () => {
-      setLoading(true);
+      if (isInitialLoad) {
+        setLoading(true);
+      }
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
       try {
         const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
-        const response = await fetch(`${baseUrl}/api/risk?lang=${language}`);
+        const response = await fetch(`${baseUrl}/api/risk?lang=${language}`, {
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
         const json = await response.json();
         setData(json);
         setError(null);
+        isInitialLoad = false;
       } catch (err) {
+        clearTimeout(timeoutId);
         console.error('Data fetch error:', err);
-        setError('Failed to securely connect to Project ARES network.');
+        if (err.name === 'AbortError') {
+          setError('Radar Sync Timeout. Retrying...');
+        } else {
+          setError('Failed to securely connect to Project ARES network.');
+        }
       } finally {
         setLoading(false);
       }
@@ -221,7 +240,7 @@ const DashboardContent = () => {
     const interval = setInterval(fetchRiskData, 45000); // 45 seconds polling
     
     return () => clearInterval(interval);
-  }, [language]);
+  }, [language, retryCounter]);
 
   // Live Whale Watch WebSocket
   useEffect(() => {
@@ -395,7 +414,16 @@ const DashboardContent = () => {
           ) : error ? (
             <div className="flex flex-col items-center justify-center h-[500px] rounded-2xl border border-red-500/30 bg-red-500/5 backdrop-blur-md p-8 text-center">
               <div className="font-mono text-lg text-red-400 mb-2">SYSTEM ERROR</div>
-              <div className="font-sans text-sm text-gray-400">{error}</div>
+              <div className="font-sans text-sm text-gray-400 mb-6">{error}</div>
+              <button 
+                onClick={() => {
+                  setError(null);
+                  setRetryCounter(prev => prev + 1);
+                }}
+                className="px-6 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 rounded-lg text-red-400 font-mono text-xs tracking-widest transition-colors uppercase"
+              >
+                Retry Uplink
+              </button>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 xl:gap-6 h-auto items-stretch">

@@ -101,7 +101,8 @@ async function scrapeFarsideETF() {
     } catch (error) {
         let details = error.message;
         if (error.response && error.response.data) {
-             details += " | ScrapingBee Data: " + Buffer.from(error.response.data).toString('utf-8');
+             const dataStr = typeof error.response.data === 'string' ? error.response.data : JSON.stringify(error.response.data);
+             details += " | ScrapingBee Data: " + dataStr;
         }
         console.error('[-] Error scraping Farside:', details);
         return { rawText: `PROXY ERROR: Farside Scraper failed: ${details}` };
@@ -317,7 +318,11 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
-// Stripe Session Verification & JWT Generation
+// Stripe Session Verification & JWT Generation// Health Check Endpoint (Keep-Alive)
+app.get('/api/health', (req, res) => {
+    res.status(200).json({ status: 200, message: "ARES Engine Hot" });
+});
+
 app.get('/api/verify-session', async (req, res) => {
     const { session_id } = req.query;
     if (!session_id) {
@@ -376,7 +381,6 @@ async function runBackgroundSweep() {
         console.log('[+] Background sweep completed and cached.');
     } catch (e) {
         console.error('[-] Error in background sweep:', e);
-        if (browser) await browser.close().catch(() => {});
     } finally {
         isSweeping = false;
     }
