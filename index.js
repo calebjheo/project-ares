@@ -120,6 +120,7 @@ async function takeCoinglassScreenshot(ticker) {
     try {
         const jsScenario = {
             instructions: [
+                { "evaluate": "if(window.location.href.includes('login') || document.body.innerText.includes('Sign in')) throw new Error('AUTH_FAILED');" },
                 { "wait_for": "input.MuiAutocomplete-input" },
                 { "wait": 1000 },
                 { "evaluate": "const inputs = document.querySelectorAll('input.MuiAutocomplete-input'); for(let input of inputs) { if(input.value && input.value.includes('BTC')) { input.id = 'target-heatmap-input'; input.focus(); input.setSelectionRange(0, input.value.length); break; } }" },
@@ -147,12 +148,22 @@ async function takeCoinglassScreenshot(ticker) {
             js_scenario: JSON.stringify(jsScenario)
         };
 
-        if (process.env.COINGLASS_COOKIES) {
-            params.cookies = process.env.COINGLASS_COOKIES;
+        const tokenValue = process.env.COINGLASS_SESSION_COOKIE;
+        const headers = {};
+        
+        if (tokenValue) {
+            // 1. Inject as a Browser Cookie (ScrapingBee format: name=value)
+            params.cookies = `obe=${tokenValue}`;
+            
+            // 2. Inject as a Custom HTTP Header (Fallback for internal API)
+            // ScrapingBee requires forward_headers=true and the Spb- prefix for custom headers
+            params.forward_headers = 'true';
+            headers['Spb-Obe'] = tokenValue;
         }
 
         const response = await axios.get('https://app.scrapingbee.com/api/v1/', { 
             params,
+            headers,
             responseType: 'arraybuffer',
             timeout: 120000 
         });
@@ -164,6 +175,11 @@ async function takeCoinglassScreenshot(ticker) {
         if (error.response && error.response.data) {
              details += " | ScrapingBee Data: " + Buffer.from(error.response.data).toString('utf-8');
         }
+        
+        if (details.includes('AUTH_FAILED')) {
+            return `AUTH_FAILED: CoinGlass cookie expired. Please update Render environment variables.`;
+        }
+        
         console.error(`[-] Error scraping Coinglass for ${ticker}:`, details);
         return `PROXY ERROR: Coinglass Scraper (${ticker}) failed: ${details}`;
     }
@@ -362,10 +378,8 @@ async function runBackgroundSweep() {
         const cryptoData = await fetchCryptoData();
         const etfFlow = await scrapeFarsideETF();
         const btcScreenshot = await takeCoinglassScreenshot('BTC');
-        
-        // Enforce BTC-Only Protocol on background sweep
-        const ethScreenshot = "PAYWALLED";
-        const solScreenshot = "PAYWALLED";
+        const ethScreenshot = await takeCoinglassScreenshot('ETH');
+        const solScreenshot = await takeCoinglassScreenshot('SOL');
         const corpData = await fetchCorporateData();
         
         const payload = {
@@ -550,14 +564,6 @@ app.get('/api/altcoin', async (req, res) => {
 
     console.log(`API Request: Fetching altcoin radar for ${ticker}...`);
     try {
-        // Enforce BTC-Only Protocol: Coinglass paywalled altcoin heatmaps
-        if (ticker !== 'BTC') {
-            return res.json({
-                "Kill_Zone": "PAYWALLED",
-                "Threat_Level": "OFFLINE"
-            });
-        }
-
         const screenshot = await takeCoinglassScreenshot(ticker);
         const jsonResult = await analyzeAltcoinHeatmap(ticker, screenshot);
         
