@@ -617,7 +617,6 @@ app.get('/api/test-scrape', async (req, res) => {
         res.json({ success: false, error: error.message, status: error.response?.status, dataLength: error.response?.data?.length });
     }
 });
-});
 
 // === WHALE WATCH GEO-BYPASS ===
 let recentLiquidations = [];
