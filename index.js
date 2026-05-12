@@ -646,6 +646,11 @@ function initWhaleWatchStream() {
                     .slice(0, 15);
                     
                 recentLiquidations = historical;
+                
+                // Broadcast historical data to any clients that connected before the fetch finished
+                sseClients.forEach(client => {
+                    client.res.write(`data: ${JSON.stringify(recentLiquidations)}\n\n`);
+                });
             }
         })
         .catch(err => console.error('[-] Failed to pre-fetch historical liquidations:', err.message));
@@ -703,6 +708,8 @@ app.get('/api/stream/liquidations', (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); // Disable Nginx buffering on Render
+    res.flushHeaders();
     
     const client = { id: Date.now(), res };
     sseClients.push(client);
