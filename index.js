@@ -6,7 +6,8 @@ const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const jwt = require('jsonwebtoken');
-
+const { HttpsProxyAgent } = require('https-proxy-agent');
+const WebSocket = require('ws');
 // Function to fetch BTC Price and Fear & Greed Index
 async function fetchCryptoData() {
     try {
@@ -615,6 +616,83 @@ app.get('/api/test-scrape', async (req, res) => {
     } catch (error) {
         res.json({ success: false, error: error.message, status: error.response?.status, dataLength: error.response?.data?.length });
     }
+});
+});
+
+// === WHALE WATCH GEO-BYPASS ===
+let recentLiquidations = [];
+let sseClients = [];
+
+function initWhaleWatchStream() {
+    if (!process.env.PROXY_API_KEY) {
+        console.log('[-] Missing PROXY_API_KEY. Whale Watch proxy disabled.');
+        return;
+    }
+    
+    // Route exclusively through German proxy to bypass US Geo-block
+    const proxyUrl = `http://${process.env.PROXY_API_KEY}&country=de:@proxy.scrapingbee.com:8886`;
+    const agent = new HttpsProxyAgent(proxyUrl);
+    
+    const ws = new WebSocket('wss://fstream.binance.com/ws/!forceOrder@arr', { agent });
+    
+    ws.on('open', () => {
+        console.log('[+] Whale Watch Uplink Established (via DE proxy)');
+    });
+    
+    ws.on('message', (data) => {
+        try {
+            const payload = JSON.parse(data);
+            if (payload.e === 'forceOrder') {
+                const order = payload.o;
+                const size = (parseFloat(order.q) * parseFloat(order.p));
+                
+                if (size > 1000) {
+                    const isLong = order.S === 'SELL';
+                    const formattedSize = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(size);
+                    const sideText = isLong ? 'Longs Liquidated' : 'Shorts Liquidated';
+                    const icon = isLong ? '🚨' : '🟢';
+                    const colorClass = isLong ? 'text-red-400' : 'text-green-400';
+                    const liqText = `${formattedSize} ${order.s.replace('USDT', '')} ${sideText}`;
+                    
+                    const newLiq = { text: liqText, icon, colorClass, id: payload.E + order.s };
+                    recentLiquidations.unshift(newLiq);
+                    recentLiquidations = recentLiquidations.slice(0, 15);
+                    
+                    sseClients.forEach(client => {
+                        client.res.write(`data: ${JSON.stringify(recentLiquidations)}\n\n`);
+                    });
+                }
+            }
+        } catch (e) {}
+    });
+    
+    ws.on('error', (err) => {
+        console.error('[-] Whale Watch proxy error:', err.message);
+    });
+    
+    ws.on('close', () => {
+        console.log('[-] Whale Watch connection closed. Reconnecting in 5s...');
+        setTimeout(initWhaleWatchStream, 5000);
+    });
+}
+
+// Spin up proxy tunnel
+initWhaleWatchStream();
+
+// SSE Broadcast Endpoint
+app.get('/api/stream/liquidations', (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    
+    const client = { id: Date.now(), res };
+    sseClients.push(client);
+    
+    res.write(`data: ${JSON.stringify(recentLiquidations)}\n\n`);
+    
+    req.on('close', () => {
+        sseClients = sseClients.filter(c => c.id !== client.id);
+    });
 });
 
 // Do not execute automatically if imported as a module

@@ -242,61 +242,34 @@ const DashboardContent = () => {
     return () => clearInterval(interval);
   }, [language, retryCounter]);
 
-  // Live Whale Watch WebSocket
+  // Live Whale Watch SSE (Server-Sent Events via Backend Proxy)
   useEffect(() => {
     if (!isProUser) return;
     
-    const ws = new WebSocket('wss://fstream.binance.com/ws/!forceOrder@arr');
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+    const eventSource = new EventSource(`${baseUrl}/api/stream/liquidations`);
     
-    ws.onmessage = (event) => {
+    eventSource.onmessage = (event) => {
       try {
-        const payload = JSON.parse(event.data);
-        if (payload.e === 'forceOrder') {
-          const order = payload.o;
-          const size = (parseFloat(order.q) * parseFloat(order.p));
-          
-          // Only show liquidations over $1,000 to keep the ticker highly active
-          if (size > 1000) {
-            const isLong = order.S === 'SELL'; // If forced to SELL, it was a LONG being liquidated
-            const formattedSize = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(size);
-            const sideText = isLong ? 'Longs Liquidated' : 'Shorts Liquidated';
-            const icon = isLong ? '🚨' : '🟢';
-            const colorClass = isLong ? 'text-red-400' : 'text-green-400';
-            
-            const liqText = `${formattedSize} ${order.s.replace('USDT', '')} ${sideText}`;
-            
-            setLiquidations(prev => {
-              const next = [{ text: liqText, icon, colorClass, id: payload.E + order.s }, ...prev].slice(0, 15);
-              return next;
-            });
-          }
+        const data = JSON.parse(event.data);
+        if (Array.isArray(data) && data.length > 0) {
+          setLiquidations(data);
         }
       } catch (e) {
         // Ignore parsing errors
       }
     };
     
-    ws.onerror = () => {
+    eventSource.onerror = () => {
       setLiquidations([{
-        text: 'WHALE WATCH: LIVE UPLINK BLOCKED BY REGIONAL FIREWALL.',
-        icon: '⚠️',
-        colorClass: 'text-amber-500',
-        id: 'firewall_err'
+        text: 'WHALE WATCH: RE-ESTABLISHING SECURE UPLINK...',
+        icon: '📡',
+        colorClass: 'text-blue-400',
+        id: 'reconnect_err'
       }]);
     };
 
-    ws.onclose = () => {
-      if (liquidations.length === 0) {
-        setLiquidations([{
-          text: 'WHALE WATCH: CONNECTION DROPPED.',
-          icon: '⚠️',
-          colorClass: 'text-amber-500',
-          id: 'close_err'
-        }]);
-      }
-    };
-    
-    return () => ws.close();
+    return () => eventSource.close();
   }, [isProUser]);
 
   if (!agreedToTos) {
