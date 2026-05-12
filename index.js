@@ -623,19 +623,39 @@ let recentLiquidations = [];
 let sseClients = [];
 
 function initWhaleWatchStream() {
-    if (!process.env.PROXY_API_KEY) {
-        console.log('[-] Missing PROXY_API_KEY. Whale Watch proxy disabled.');
-        return;
-    }
-    
-    // Route exclusively through German proxy to bypass US Geo-block
-    const proxyUrl = `http://${process.env.PROXY_API_KEY}&country=de:@proxy.scrapingbee.com:8886`;
-    const agent = new HttpsProxyAgent(proxyUrl);
-    
-    const ws = new WebSocket('wss://fstream.binance.com/ws/!forceOrder@arr', { agent });
+    // Pre-populate with recent historical liquidations so the UI isn't empty on load
+    axios.get('https://fapi.binance.com/fapi/v1/allForceOrders')
+        .then(response => {
+            if (response.data && Array.isArray(response.data)) {
+                const historical = response.data
+                    .map(order => {
+                        const size = parseFloat(order.q) * parseFloat(order.p);
+                        if (size <= 1000) return null;
+                        
+                        const isLong = order.S === 'SELL';
+                        const formattedSize = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(size);
+                        const sideText = isLong ? 'Longs Liquidated' : 'Shorts Liquidated';
+                        const icon = isLong ? '🚨' : '🟢';
+                        const colorClass = isLong ? 'text-red-400' : 'text-green-400';
+                        const liqText = `${formattedSize} ${order.s.replace('USDT', '')} ${sideText}`;
+                        
+                        return { text: liqText, icon, colorClass, id: order.time + order.s };
+                    })
+                    .filter(Boolean)
+                    .reverse() // Most recent first
+                    .slice(0, 15);
+                    
+                recentLiquidations = historical;
+            }
+        })
+        .catch(err => console.error('[-] Failed to pre-fetch historical liquidations:', err.message));
+
+    // The backend server connects directly. No proxy needed since Render is not blocked, 
+    // and the proxy was stripping WebSocket upgrade requests.
+    const ws = new WebSocket('wss://fstream.binance.com/ws/!forceOrder@arr');
     
     ws.on('open', () => {
-        console.log('[+] Whale Watch Uplink Established (via DE proxy)');
+        console.log('[+] Whale Watch Uplink Established (Direct Backend Stream)');
     });
     
     ws.on('message', (data) => {
