@@ -119,26 +119,19 @@ async function takeCoinglassScreenshot(ticker) {
 
     console.log(`[+] Taking screenshot for ${ticker} via ScrapingBee API...`);
     try {
+        // Drastically simplified scenario: just bypass login and remove overlays
         const jsScenario = {
             instructions: [
                 { "evaluate": "if(window.location.href.includes('login') || document.body.innerText.includes('Sign in')) throw new Error('AUTH_FAILED');" },
-                { "wait_for": "input.MuiAutocomplete-input" },
-                { "wait": 1000 },
-                { "evaluate": "const input = document.querySelector('input.MuiAutocomplete-input'); if(input) { input.id = 'target-heatmap-input'; input.focus(); input.setSelectionRange(0, input.value.length); }" },
-                { "wait": 1000 },
-                { "fill": ["#target-heatmap-input", ticker] },
-                { "wait_for": "li.MuiAutocomplete-option" },
-                { "wait": 1000 },
-                { "evaluate": "const opt = document.querySelector('li.MuiAutocomplete-option'); if(opt) { opt.dispatchEvent(new MouseEvent('mousedown', {bubbles: true})); opt.click(); opt.dispatchEvent(new MouseEvent('mouseup', {bubbles: true})); }" },
-                { "wait": 5000 },
+                { "wait": 10000 },
                 { "evaluate": "const style = document.createElement('style'); style.innerHTML = '* { filter: none !important; backdrop-filter: none !important; } div[role=\"dialog\"], .MuiDialog-root, .MuiModal-root { display: none !important; opacity: 0 !important; visibility: hidden !important; }'; document.head.appendChild(style);" },
-                { "wait": 15000 }
+                { "wait": 5000 }
             ]
         };
         
         const params = {
             api_key: process.env.PROXY_API_KEY,
-            url: 'https://www.coinglass.com/pro/futures/LiquidationHeatMap',
+            url: `https://www.coinglass.com/pro/futures/LiquidationHeatMap?symbol=${ticker}`,
             render_js: 'true',
             stealth_proxy: 'true',
             premium_proxy: 'true',
@@ -622,86 +615,62 @@ app.get('/api/test-scrape', async (req, res) => {
 let recentLiquidations = [];
 let sseClients = [];
 
-function initWhaleWatchStream() {
-    // Pre-populate with recent historical liquidations so the UI isn't empty on load
-    axios.get('https://fapi.binance.com/fapi/v1/allForceOrders')
-        .then(response => {
-            if (response.data && Array.isArray(response.data)) {
-                const historical = response.data
-                    .map(order => {
-                        const size = parseFloat(order.q) * parseFloat(order.p);
-                        if (size <= 1000) return null;
-                        
-                        const isLong = order.S === 'SELL';
-                        const formattedSize = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(size);
-                        const sideText = isLong ? 'Longs Liquidated' : 'Shorts Liquidated';
-                        const icon = isLong ? '🚨' : '🟢';
-                        const colorClass = isLong ? 'text-red-400' : 'text-green-400';
-                        const liqText = `${formattedSize} ${order.s.replace('USDT', '')} ${sideText}`;
-                        
-                        return { text: liqText, icon, colorClass, id: order.time + order.s };
-                    })
-                    .filter(Boolean)
-                    .reverse() // Most recent first
-                    .slice(0, 15);
-                    
-                recentLiquidations = historical;
-                
-                // Broadcast historical data to any clients that connected before the fetch finished
-                sseClients.forEach(client => {
-                    client.res.write(`data: ${JSON.stringify(recentLiquidations)}\n\n`);
-                });
+async function pollWhaleWatch() {
+    if (sseClients.length === 0) return; // Save credits if no one is watching
+    if (!process.env.PROXY_API_KEY) return;
+    
+    try {
+        const response = await axios.get('https://app.scrapingbee.com/api/v1/', {
+            params: {
+                api_key: process.env.PROXY_API_KEY,
+                url: 'https://fapi.binance.com/fapi/v1/allForceOrders',
+                country_code: 'de',
+                render_js: 'false'
             }
-        })
-        .catch(err => console.error('[-] Failed to pre-fetch historical liquidations:', err.message));
-
-    // The backend server connects directly. No proxy needed since Render is not blocked, 
-    // and the proxy was stripping WebSocket upgrade requests.
-    const ws = new WebSocket('wss://fstream.binance.com/ws/!forceOrder@arr');
-    
-    ws.on('open', () => {
-        console.log('[+] Whale Watch Uplink Established (Direct Backend Stream)');
-    });
-    
-    ws.on('message', (data) => {
-        try {
-            const payload = JSON.parse(data);
-            if (payload.e === 'forceOrder') {
-                const order = payload.o;
-                const size = (parseFloat(order.q) * parseFloat(order.p));
-                
-                if (size > 1000) {
-                    const isLong = order.S === 'SELL';
+        });
+        
+        if (response.data && Array.isArray(response.data)) {
+            let hasNewData = false;
+            
+            const newLiquidations = response.data
+                .map(order => {
+                    const size = parseFloat(order.origQty) * parseFloat(order.price);
+                    if (size <= 1000) return null;
+                    
+                    const isLong = order.side === 'SELL';
                     const formattedSize = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(size);
                     const sideText = isLong ? 'Longs Liquidated' : 'Shorts Liquidated';
                     const icon = isLong ? '🚨' : '🟢';
                     const colorClass = isLong ? 'text-red-400' : 'text-green-400';
-                    const liqText = `${formattedSize} ${order.s.replace('USDT', '')} ${sideText}`;
+                    const liqText = `${formattedSize} ${order.symbol.replace('USDT', '')} ${sideText}`;
                     
-                    const newLiq = { text: liqText, icon, colorClass, id: payload.E + order.s };
-                    recentLiquidations.unshift(newLiq);
-                    recentLiquidations = recentLiquidations.slice(0, 15);
-                    
-                    sseClients.forEach(client => {
-                        client.res.write(`data: ${JSON.stringify(recentLiquidations)}\n\n`);
-                    });
+                    return { text: liqText, icon, colorClass, id: order.time + order.symbol };
+                })
+                .filter(Boolean)
+                .reverse(); // Binance returns older first usually, we want newest first
+                
+            // Merge into recentLiquidations avoiding duplicates
+            for (const nLiq of newLiquidations) {
+                if (!recentLiquidations.find(r => r.id === nLiq.id)) {
+                    recentLiquidations.unshift(nLiq);
+                    hasNewData = true;
                 }
             }
-        } catch (e) {}
-    });
-    
-    ws.on('error', (err) => {
-        console.error('[-] Whale Watch proxy error:', err.message);
-    });
-    
-    ws.on('close', () => {
-        console.log('[-] Whale Watch connection closed. Reconnecting in 5s...');
-        setTimeout(initWhaleWatchStream, 5000);
-    });
+            
+            if (hasNewData) {
+                recentLiquidations = recentLiquidations.slice(0, 15);
+                sseClients.forEach(client => {
+                    client.res.write(`data: ${JSON.stringify(recentLiquidations)}\n\n`);
+                });
+            }
+        }
+    } catch (err) {
+        console.error('[-] ScrapingBee polling error:', err.message);
+    }
 }
 
-// Spin up proxy tunnel
-initWhaleWatchStream();
+// Poll every 15 seconds
+setInterval(pollWhaleWatch, 15000);
 
 // SSE Broadcast Endpoint
 app.get('/api/stream/liquidations', (req, res) => {
