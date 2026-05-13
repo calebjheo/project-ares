@@ -129,7 +129,7 @@ async function takeCoinglassScreenshot(ticker) {
                 { "fill": ["#target-heatmap-input", ticker] },
                 { "wait_for": "li.MuiAutocomplete-option" },
                 { "wait": 1000 },
-                { "evaluate": `const opts = document.querySelectorAll('li.MuiAutocomplete-option'); for(let opt of opts) { if(opt.innerText.trim() === '${ticker}') { opt.dispatchEvent(new MouseEvent('mousedown', {bubbles: true})); opt.click(); opt.dispatchEvent(new MouseEvent('mouseup', {bubbles: true})); break; } }` },
+                { "evaluate": `const opts = document.querySelectorAll('li.MuiAutocomplete-option'); for(let opt of opts) { if(opt.innerText.includes('${ticker}')) { opt.dispatchEvent(new MouseEvent('mousedown', {bubbles: true})); opt.click(); opt.dispatchEvent(new MouseEvent('mouseup', {bubbles: true})); break; } }` },
                 { "wait": 5000 },
                 { "evaluate": "const style = document.createElement('style'); style.innerHTML = '* { filter: none !important; backdrop-filter: none !important; } div[role=\"dialog\"], .MuiDialog-root, .MuiModal-root { display: none !important; opacity: 0 !important; visibility: hidden !important; }'; document.head.appendChild(style);" },
                 { "wait": 15000 }
@@ -632,7 +632,8 @@ async function pollWhaleWatch() {
                 api_key: process.env.PROXY_API_KEY,
                 url: 'https://fapi.binance.com/fapi/v1/allForceOrders',
                 country_code: 'de',
-                render_js: 'false'
+                render_js: 'false',
+                premium_proxy: 'true'
             }
         });
         
