@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import PostureShield from './PostureShield';
 import ActionableIntel from './ActionableIntel';
 import KillZoneTarget from './KillZoneTarget';
@@ -220,6 +221,8 @@ const DashboardContent = () => {
   const [lastSweep, setLastSweep] = useState('');
   const [retryCounter, setRetryCounter] = useState(0);
 
+  const location = useLocation();
+
   useEffect(() => {
     // MVP Auth Logic: Check URL for success parameter from Stripe
     const params = new URLSearchParams(window.location.search);
@@ -229,7 +232,15 @@ const DashboardContent = () => {
       // Clean URL silently
       window.history.replaceState(null, '', window.location.pathname);
     }
-  }, []);
+    
+    // Auth Wall Logic: If from landing page CTA, open modal
+    const locationParams = new URLSearchParams(location.search);
+    if (locationParams.get('auth') === 'true') {
+      setIsUpgradeModalOpen(true);
+      // Clean URL silently so refresh doesn't reopen modal
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, [location.search]);
 
   useEffect(() => {
     // Set initial last sweep time
