@@ -122,16 +122,34 @@ async function takeCoinglassScreenshot(ticker) {
         const jsScenario = {
             instructions: [
                 { "evaluate": "if(window.location.href.includes('login') || document.body.innerText.includes('Sign in')) throw new Error('AUTH_FAILED');" },
-                { "wait_for": "input.MuiAutocomplete-input" },
-                { "wait": 1000 },
-                { "evaluate": "const input = document.querySelector('input.MuiAutocomplete-input'); if(input) { input.id = 'target-heatmap-input'; input.focus(); input.setSelectionRange(0, input.value.length); }" },
-                { "wait": 1000 },
-                { "fill": ["#target-heatmap-input", ticker] },
-                { "wait_for": "li.MuiAutocomplete-option" },
-                { "wait": 1000 },
-                { "evaluate": `const opts = document.querySelectorAll('li.MuiAutocomplete-option'); for(let opt of opts) { if(opt.innerText.includes('${ticker}')) { opt.dispatchEvent(new MouseEvent('mousedown', {bubbles: true})); opt.click(); opt.dispatchEvent(new MouseEvent('mouseup', {bubbles: true})); break; } }` },
-                { "wait": 5000 },
-                { "evaluate": "const style = document.createElement('style'); style.innerHTML = '* { filter: none !important; backdrop-filter: none !important; } div[role=\"dialog\"], .MuiDialog-root, .MuiModal-root { display: none !important; opacity: 0 !important; visibility: hidden !important; }'; document.head.appendChild(style);" },
+                { "evaluate": `
+                    setTimeout(() => {
+                        try {
+                            const input = document.querySelector('input.MuiAutocomplete-input');
+                            if(input) {
+                                input.focus();
+                                const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+                                nativeInputValueSetter.call(input, '${ticker}');
+                                input.dispatchEvent(new Event('input', { bubbles: true }));
+                                
+                                setTimeout(() => {
+                                    try {
+                                        const opts = document.querySelectorAll('li.MuiAutocomplete-option');
+                                        for(let opt of opts) {
+                                            if(opt.innerText && opt.innerText.includes('${ticker}')) {
+                                                opt.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
+                                                opt.click();
+                                                opt.dispatchEvent(new MouseEvent('mouseup', {bubbles: true}));
+                                                break;
+                                            }
+                                        }
+                                    } catch(e) {}
+                                }, 3000);
+                            }
+                        } catch(e) {}
+                    }, 5000);
+                ` },
+                { "evaluate": "setTimeout(() => { const style = document.createElement('style'); style.innerHTML = '* { filter: none !important; backdrop-filter: none !important; } div[role=\"dialog\"], .MuiDialog-root, .MuiModal-root { display: none !important; opacity: 0 !important; visibility: hidden !important; }'; document.head.appendChild(style); }, 8000);" },
                 { "wait": 15000 }
             ]
         };
@@ -622,6 +640,7 @@ app.get('/api/test-scrape', async (req, res) => {
 let recentLiquidations = [];
 let sseClients = [];
 
+let lastWhaleError = "No errors yet";
 async function pollWhaleWatch() {
     if (sseClients.length === 0) return; // Save credits if no one is watching
     if (!process.env.PROXY_API_KEY) return;
@@ -683,12 +702,17 @@ async function pollWhaleWatch() {
             }
         }
     } catch (err) {
+        lastWhaleError = err.message + (err.response ? ' ' + JSON.stringify(err.response.data).substring(0, 500) : '');
         console.error('[-] ScrapingBee polling error:', err.message);
     }
 }
 
 // Poll every 15 seconds
 setInterval(pollWhaleWatch, 15000);
+
+app.get('/api/debug-whale', (req, res) => {
+    res.json({ error: lastWhaleError });
+});
 
 // SSE Broadcast Endpoint
 app.get('/api/stream/liquidations', (req, res) => {
