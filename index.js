@@ -359,7 +359,6 @@ app.post('/api/create-checkout-session', async (req, res) => {
         }
         
         const session = await stripe.checkout.sessions.create({
-            payment_method_types: ['card'],
             mode: 'subscription',
             client_reference_id: clerkUserId,
             line_items: [{
