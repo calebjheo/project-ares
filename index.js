@@ -143,8 +143,6 @@ async function takeCoinglassScreenshot(ticker) {
             screenshot: 'true',
             window_width: '1920',
             window_height: '1080',
-            wait: '25000',
-            timeout: '60000',
             js_scenario: JSON.stringify(jsScenario)
         };
 
