@@ -117,73 +117,31 @@ async function takeCoinglassScreenshot(ticker) {
         return `PROXY ERROR: PROXY_API_KEY is not defined. Cannot capture heatmap.`;
     }
 
-    console.log(`[+] Taking screenshot for ${ticker} via ScrapingBee API...`);
+    console.log(`[+] Taking screenshot for ${ticker} via ScrapingBee API (Coinank)...`);
     try {
         const jsScenario = {
             instructions: [
-                { "evaluate": "if(window.location.href.includes('login') || document.body.innerText.includes('Sign in')) throw new Error('AUTH_FAILED');" },
-                { "evaluate": `
-                    setTimeout(() => {
-                        try {
-                            const input = document.querySelector('input.MuiAutocomplete-input');
-                            if(input) {
-                                input.focus();
-                                const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
-                                nativeInputValueSetter.call(input, '${ticker}');
-                                input.dispatchEvent(new Event('input', { bubbles: true }));
-                                
-                                setTimeout(() => {
-                                    try {
-                                        const opts = document.querySelectorAll('li.MuiAutocomplete-option');
-                                        for(let opt of opts) {
-                                            if(opt.innerText && opt.innerText.includes('${ticker}')) {
-                                                opt.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
-                                                opt.click();
-                                                opt.dispatchEvent(new MouseEvent('mouseup', {bubbles: true}));
-                                                break;
-                                            }
-                                        }
-                                    } catch(e) {}
-                                }, 3000);
-                            }
-                        } catch(e) {}
-                    }, 5000);
-                ` },
-                { "evaluate": "setTimeout(() => { const style = document.createElement('style'); style.innerHTML = '* { filter: none !important; backdrop-filter: none !important; } div[role=\"dialog\"], .MuiDialog-root, .MuiModal-root { display: none !important; opacity: 0 !important; visibility: hidden !important; }'; document.head.appendChild(style); }, 8000);" },
-                { "wait": 15000 }
+                { "evaluate": "setTimeout(() => { const style = document.createElement('style'); style.innerHTML = '* { filter: none !important; backdrop-filter: none !important; } div[role=\"dialog\"], .modal, .dialog, .MuiDialog-root, .MuiModal-root { display: none !important; opacity: 0 !important; visibility: hidden !important; }'; document.head.appendChild(style); }, 5000);" },
+                { "wait": 10000 }
             ]
         };
         
         const params = {
             api_key: process.env.PROXY_API_KEY,
-            url: `https://www.coinglass.com/pro/futures/LiquidationHeatMap?symbol=${ticker}`,
+            url: `https://coinank.com/liqMap?coin=${ticker}`,
             render_js: 'true',
             stealth_proxy: 'true',
             premium_proxy: 'true',
             screenshot: 'true',
             window_width: '1920',
             window_height: '1080',
-            wait: '25000',
+            wait: '15000',
             timeout: '60000',
             js_scenario: JSON.stringify(jsScenario)
         };
 
-        const tokenValue = process.env.COINGLASS_SESSION_COOKIE;
-        const headers = {};
-        
-        if (tokenValue) {
-            // 1. Inject as a Browser Cookie (ScrapingBee format: name=value)
-            params.cookies = `obe=${tokenValue}`;
-            
-            // 2. Inject as a Custom HTTP Header (Fallback for internal API)
-            // ScrapingBee requires forward_headers=true and the Spb- prefix for custom headers
-            params.forward_headers = 'true';
-            headers['Spb-Obe'] = tokenValue;
-        }
-
         const response = await axios.get('https://app.scrapingbee.com/api/v1/', { 
             params,
-            headers,
             responseType: 'arraybuffer',
             timeout: 120000 
         });
@@ -290,7 +248,7 @@ Here is the EXACT JSON format you must follow:\n` +
                               `Raw Farside ETF Data:\n${payload.etfFlow.rawText}\n\n` +
                               `CRITICAL DIRECTIVES:\n` +
                               `1. "Corporate_Sentiment": You MUST analyze the COIN and HOOD stock prices. Output a 2-3 sentence detailed summary. Provide a highly detailed breakdown. YOU MUST TRANSLATE THIS ENTIRE SUMMARY INTO ${lang}. DO NOT OMIT THIS KEY.\n` +
-                              `2. "BTC_Kill_Zone" / "ETH_Kill_Zone" / "SOL_Kill_Zone": Analyze the attached Coinglass liquidation heatmaps. Find the heaviest liquidation clusters STRICTLY BELOW the live anchor prices. Format the values WITH a dollar sign and commas (e.g. "$74,800"). IF THE IMAGE IS A CLOUDFLARE CHALLENGE PAGE OR MISSING, YOU MUST OUTPUT "RADAR JAMMED".\n` +
+                              `2. "BTC_Kill_Zone" / "ETH_Kill_Zone" / "SOL_Kill_Zone": Analyze the attached Coinank liquidation heatmaps. Find the heaviest liquidation clusters STRICTLY BELOW the live anchor prices. Format the values WITH a dollar sign and commas (e.g. "$74,800"). IF THE IMAGE IS A CLOUDFLARE CHALLENGE PAGE OR MISSING, YOU MUST OUTPUT "RADAR JAMMED".\n` +
                               `3. "Actionable_Intel": Provide a highly detailed 3-4 sentence strategic analysis synthesizing ONLY the institutional ETF flows and Kill Zones. YOU MUST TRANSLATE THIS ENTIRE ANALYSIS INTO ${lang}. DO NOT mention retail sentiment, COIN, or HOOD, as that is covered separately.`
                         },
                         ...heatmapParts
@@ -642,74 +600,58 @@ let recentLiquidations = [];
 let sseClients = [];
 
 let lastWhaleError = "No errors yet";
-async function pollWhaleWatch() {
-    if (sseClients.length === 0) return; // Save credits if no one is watching
-    if (!process.env.PROXY_API_KEY) return;
+let reconnectTimeout = null;
+
+function initWhaleWatchStream() {
+    console.log('[+] Initializing Whale Watch WebSocket...');
+    const ws = new WebSocket('wss://fstream.binance.com/ws/!forceOrder@arr');
     
-    try {
-        const response = await axios.get('https://app.scrapingbee.com/api/v1/', {
-            params: {
-                api_key: process.env.PROXY_API_KEY,
-                url: 'https://fapi.binance.com/fapi/v1/allForceOrders',
-                country_code: 'jp',
-                render_js: 'false',
-                stealth_proxy: 'true'
-            }
-        });
-        
-        let parsedData = response.data;
-        if (typeof parsedData === 'string') {
-            try {
-                parsedData = JSON.parse(parsedData);
-            } catch (e) {
-                // Not JSON, ignore
-                return;
-            }
-        }
-        
-        if (parsedData && Array.isArray(parsedData)) {
-            let hasNewData = false;
-            
-            const newLiquidations = parsedData
-                .map(order => {
-                    const size = parseFloat(order.origQty) * parseFloat(order.price);
-                    if (size <= 1000) return null;
-                    
-                    const isLong = order.side === 'SELL';
+    ws.on('open', () => {
+        console.log('[+] Whale Watch Uplink Established (Direct Backend Stream)');
+        lastWhaleError = "Connected successfully";
+    });
+    
+    ws.on('message', (data) => {
+        try {
+            const payload = JSON.parse(data);
+            if (payload.e === 'forceOrder') {
+                const order = payload.o;
+                const size = (parseFloat(order.q) * parseFloat(order.p));
+                
+                if (size > 1000) {
+                    const isLong = order.S === 'SELL';
                     const formattedSize = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(size);
                     const sideText = isLong ? 'Longs Liquidated' : 'Shorts Liquidated';
                     const icon = isLong ? '🚨' : '🟢';
                     const colorClass = isLong ? 'text-red-400' : 'text-green-400';
-                    const liqText = `${formattedSize} ${order.symbol.replace('USDT', '')} ${sideText}`;
+                    const liqText = `${formattedSize} ${order.s.replace('USDT', '')} ${sideText}`;
                     
-                    return { text: liqText, icon, colorClass, id: order.time + order.symbol };
-                })
-                .filter(Boolean)
-                .reverse(); // Binance returns older first usually, we want newest first
-                
-            // Merge into recentLiquidations avoiding duplicates
-            for (const nLiq of newLiquidations) {
-                if (!recentLiquidations.find(r => r.id === nLiq.id)) {
-                    recentLiquidations.unshift(nLiq);
-                    hasNewData = true;
+                    const newLiq = { text: liqText, icon, colorClass, id: payload.E + order.s };
+                    recentLiquidations.unshift(newLiq);
+                    recentLiquidations = recentLiquidations.slice(0, 15);
+                    
+                    sseClients.forEach(client => {
+                        client.res.write(`data: ${JSON.stringify(recentLiquidations)}\n\n`);
+                    });
                 }
             }
-            
-            if (hasNewData) {
-                recentLiquidations = recentLiquidations.slice(0, 15);
-                sseClients.forEach(client => {
-                    client.res.write(`data: ${JSON.stringify(recentLiquidations)}\n\n`);
-                });
-            }
-        }
-    } catch (err) {
-        lastWhaleError = err.message + (err.response ? ' ' + JSON.stringify(err.response.data).substring(0, 500) : '');
-        console.error('[-] ScrapingBee polling error:', err.message);
-    }
+        } catch (e) {}
+    });
+    
+    ws.on('error', (err) => {
+        console.error('[-] Whale Watch proxy error:', err.message);
+        lastWhaleError = err.message;
+    });
+    
+    ws.on('close', () => {
+        console.log('[-] Whale Watch connection closed. Reconnecting in 5s...');
+        clearTimeout(reconnectTimeout);
+        reconnectTimeout = setTimeout(initWhaleWatchStream, 5000);
+    });
 }
 
-// Poll every 15 seconds
-setInterval(pollWhaleWatch, 15000);
+// Start WebSocket connection
+initWhaleWatchStream();
 
 app.get('/api/debug-whale', (req, res) => {
     res.json({ error: lastWhaleError });
