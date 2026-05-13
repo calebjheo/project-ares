@@ -631,7 +631,7 @@ async function pollWhaleWatch() {
             params: {
                 api_key: process.env.PROXY_API_KEY,
                 url: 'https://fapi.binance.com/fapi/v1/allForceOrders',
-                country_code: 'de',
+                country_code: 'ch',
                 render_js: 'false',
                 premium_proxy: 'true'
             }
