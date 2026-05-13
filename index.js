@@ -122,14 +122,6 @@ async function takeCoinglassScreenshot(ticker) {
         const jsScenario = {
             instructions: [
                 { "evaluate": "if(window.location.href.includes('login') || document.body.innerText.includes('Sign in')) throw new Error('AUTH_FAILED');" },
-                { "click": "input.MuiAutocomplete-input" },
-                { "wait": 1000 },
-                { "evaluate": "const clearBtn = document.querySelector('button[aria-label=\"Clear\"]') || document.querySelector('button[title=\"Clear\"]') || document.querySelector('.MuiAutocomplete-clearIndicator') || document.querySelector('button[aria-label=\"Close\"]'); if(clearBtn) clearBtn.click();" },
-                { "wait": 1000 },
-                { "fill": ["input.MuiAutocomplete-input", ticker] },
-                { "wait_for": "li.MuiAutocomplete-option" },
-                { "click": "li.MuiAutocomplete-option" },
-                { "wait": 2000 },
                 { "evaluate": "const style = document.createElement('style'); style.innerHTML = '* { filter: none !important; backdrop-filter: none !important; } div[role=\"dialog\"], .MuiDialog-root, .MuiModal-root { display: none !important; opacity: 0 !important; visibility: hidden !important; }'; document.head.appendChild(style);" },
                 { "wait": 15000 }
             ]
@@ -137,7 +129,7 @@ async function takeCoinglassScreenshot(ticker) {
         
         const params = {
             api_key: process.env.PROXY_API_KEY,
-            url: `https://www.coinglass.com/pro/futures/LiquidationHeatMap`,
+            url: `https://www.coinglass.com/pro/futures/LiquidationHeatMapModel3?coin=${ticker}`,
             render_js: 'true',
             stealth_proxy: 'true',
             premium_proxy: 'true',
@@ -255,6 +247,7 @@ Here is the EXACT JSON format you must follow:\n` +
                               `"Fear_Greed_Score": "78",\n` +
                               `"Corporate_Sentiment": "Coinbase and Robinhood are bleeding down 4%, indicating total retail exhaustion.",\n` +
                               `"Net_ETF_Flow": "+$285M",\n` +
+                              `"Divergence_Matrix": "OPTIMAL: Smart Money Accumulating. Retail Exhausted.",\n` +
                               `"Actionable_Intel": "[Translate this intel into ${lang}]: Analyze current liquidity clusters. Summarize ETF flows and retail sentiment.",\n` +
                               `${btcPrompt},\n` +
                               `${ethPrompt},\n` +
@@ -270,7 +263,8 @@ Here is the EXACT JSON format you must follow:\n` +
                               `CRITICAL DIRECTIVES:\n` +
                               `1. "Corporate_Sentiment": You MUST analyze the COIN and HOOD stock prices. Output a 2-3 sentence detailed summary. Provide a highly detailed breakdown. YOU MUST TRANSLATE THIS ENTIRE SUMMARY INTO ${lang}. DO NOT OMIT THIS KEY.\n` +
                               `2. "BTC_Kill_Zone" / "ETH_Kill_Zone" / "SOL_Kill_Zone": Analyze the attached Coinglass liquidation heatmaps. Find the heaviest liquidation clusters STRICTLY BELOW the live anchor prices. Format the values WITH a dollar sign and commas (e.g. "$74,800"). IF THE IMAGE IS A CLOUDFLARE CHALLENGE PAGE OR MISSING, YOU MUST OUTPUT "RADAR JAMMED".\n` +
-                              `3. "Actionable_Intel": Provide a highly detailed 3-4 sentence strategic analysis synthesizing ONLY the institutional ETF flows and Kill Zones. YOU MUST TRANSLATE THIS ENTIRE ANALYSIS INTO ${lang}. DO NOT mention retail sentiment, COIN, or HOOD, as that is covered separately.`
+                              `3. "Actionable_Intel": Provide a highly detailed 3-4 sentence strategic analysis synthesizing ONLY the institutional ETF flows and Kill Zones. YOU MUST TRANSLATE THIS ENTIRE ANALYSIS INTO ${lang}. DO NOT mention retail sentiment, COIN, or HOOD, as that is covered separately.\n` +
+                              `4. "Divergence_Matrix": Compare the ETF Flows and Corporate Sentiment. If ETF Flows are Negative AND Retail Stocks are Positive -> Output: "DANGER: Smart Money Distributing to Retail. Leverage Trap Imminent.". If ETF Flows are Positive AND Retail Stocks are Negative -> Output: "OPTIMAL: Smart Money Accumulating. Retail Exhausted.". Otherwise -> Output: "NEUTRAL: Macro Indecision. Trade Level to Level." You MUST translate the output into ${lang}.`
                         },
                         ...heatmapParts
                     ]
@@ -692,94 +686,6 @@ app.get('/api/test-scrape', async (req, res) => {
     }
 });
 
-// === WHALE WATCH GEO-BYPASS ===
-let recentLiquidations = [];
-let sseClients = [];
-
-let lastWhaleError = "No errors yet";
-let reconnectTimeout = null;
-
-function initWhaleWatchStream() {
-    console.log('[+] Initializing Whale Watch WebSocket...');
-    const ws = new WebSocket('wss://stream.bybit.com/v5/public/linear');
-    
-    ws.on('open', () => {
-        console.log('[+] Whale Watch Uplink Established (Direct Backend Stream)');
-        lastWhaleError = "Connected successfully";
-        const subscribeMsg = {
-            "op": "subscribe",
-            "args": [
-                "allLiquidation.BTCUSDT",
-                "allLiquidation.ETHUSDT",
-                "allLiquidation.SOLUSDT"
-            ]
-        };
-        ws.send(JSON.stringify(subscribeMsg));
-    });
-    
-    ws.on('message', (data) => {
-        try {
-            const payload = JSON.parse(data);
-            if (payload.topic && payload.topic.startsWith('allLiquidation.')) {
-                const order = payload.data;
-                const size = parseFloat(order.size) * parseFloat(order.price);
-                
-                if (size > 1000) {
-                    const isLong = order.side === 'Buy'; 
-                    const formattedSize = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(size);
-                    const sideText = isLong ? 'Shorts Liquidated' : 'Longs Liquidated';
-                    const icon = isLong ? '🟢' : '🚨';
-                    const colorClass = isLong ? 'text-green-400' : 'text-red-400';
-                    const liqText = `${formattedSize} ${order.symbol.replace('USDT', '')} ${sideText}`;
-                    
-                    const newLiq = { text: liqText, icon, colorClass, id: payload.id || Date.now().toString() };
-                    recentLiquidations.unshift(newLiq);
-                    recentLiquidations = recentLiquidations.slice(0, 15);
-                    
-                    sseClients.forEach(client => {
-                        client.res.write(`data: ${JSON.stringify(recentLiquidations)}\n\n`);
-                    });
-                }
-            }
-        } catch (e) {}
-    });
-    
-    ws.on('error', (err) => {
-        console.error('[-] Whale Watch proxy error:', err.message);
-        lastWhaleError = err.message;
-    });
-    
-    ws.on('close', () => {
-        console.log('[-] Whale Watch connection closed. Reconnecting in 5s...');
-        clearTimeout(reconnectTimeout);
-        reconnectTimeout = setTimeout(initWhaleWatchStream, 5000);
-    });
-}
-
-// Start WebSocket connection
-initWhaleWatchStream();
-
-app.get('/api/debug-whale', (req, res) => {
-    res.json({ error: lastWhaleError });
-});
-
-// SSE Broadcast Endpoint
-app.get('/api/stream/liquidations', (req, res) => {
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no'); // Disable Nginx buffering on Render
-    res.flushHeaders();
-    
-    const client = { id: Date.now(), res };
-    sseClients.push(client);
-    
-    res.write(`data: ${JSON.stringify(recentLiquidations)}\n\n`);
-    
-    req.on('close', () => {
-        sseClients = sseClients.filter(c => c.id !== client.id);
-    });
-});
 
 // Do not execute automatically if imported as a module
 if (require.main === module) {

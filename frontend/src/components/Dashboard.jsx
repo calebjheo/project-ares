@@ -144,9 +144,10 @@ const LiveMetricsHUD = ({ fearGreed, etfFlow, t }) => (
 );
 
 const CorporateSentiment = ({ sentiment, t }) => (
-  <div className="bg-slate-900/60 border border-white/10 rounded-2xl p-5 md:p-6 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] backdrop-blur-md relative overflow-hidden group">
-    <div className="absolute inset-0 bg-gradient-to-tr from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-    <div className="flex items-center gap-2 mb-3">
+  <div className="flex flex-col h-auto p-5 md:p-8 relative overflow-hidden">
+    {/* Protected Background Layer */}
+    <div className="absolute inset-0 z-0 rounded-2xl border border-white/10 bg-slate-900/40 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] backdrop-blur-md"></div>
+    <div className="relative z-10 flex items-center gap-3 mb-4 border-b border-white/5 pb-4">
       <div className="p-1.5 bg-purple-500/20 rounded-md border border-purple-500/30">
         <Activity size={16} className="text-purple-400" />
       </div>
@@ -160,13 +161,54 @@ const CorporateSentiment = ({ sentiment, t }) => (
   </div>
 );
 
+const DivergenceMatrix = ({ matrixText, t }) => {
+  let headerColor = "text-gray-400";
+  let borderColor = "border-gray-500/30";
+  let bgColor = "bg-gray-500/20";
+  let iconColor = "text-gray-400";
+  
+  if (matrixText && matrixText.includes('DANGER')) {
+    headerColor = "text-red-400";
+    borderColor = "border-red-500/30";
+    bgColor = "bg-red-500/20";
+    iconColor = "text-red-400";
+  } else if (matrixText && matrixText.includes('OPTIMAL')) {
+    headerColor = "text-green-400";
+    borderColor = "border-green-500/30";
+    bgColor = "bg-green-500/20";
+    iconColor = "text-green-400";
+  } else if (matrixText && matrixText.includes('NEUTRAL')) {
+    headerColor = "text-amber-400";
+    borderColor = "border-amber-500/30";
+    bgColor = "bg-amber-500/20";
+    iconColor = "text-amber-400";
+  }
+
+  return (
+    <div className="flex flex-col h-auto p-5 md:p-8 relative overflow-hidden">
+      {/* Protected Background Layer */}
+      <div className="absolute inset-0 z-0 rounded-2xl border border-white/10 bg-slate-900/40 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] backdrop-blur-md"></div>
+      <div className="relative z-10 flex items-center gap-3 mb-4 border-b border-white/5 pb-4">
+        <div className={`p-1.5 ${bgColor} rounded-md border ${borderColor}`}>
+          <Activity size={16} className={iconColor} />
+        </div>
+        <h3 className={`font-sans font-bold text-[10px] md:text-xs ${headerColor} tracking-[0.2em] uppercase`}>
+          DIVERGENCE MATRIX
+        </h3>
+      </div>
+      <div className={`font-sans text-sm md:text-base text-gray-300 leading-relaxed border-l-2 ${borderColor} pl-4 py-1 relative z-10`}>
+        {matrixText || 'Calculating divergence vectors...'}
+      </div>
+    </div>
+  );
+};
+
 const DashboardContent = () => {
   const { language, setLanguage, t } = useLanguage();
   const [agreedToTos, setAgreedToTos] = useState(false);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [liquidations, setLiquidations] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isMethodologyOpen, setIsMethodologyOpen] = useState(false);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
@@ -242,35 +284,6 @@ const DashboardContent = () => {
     return () => clearInterval(interval);
   }, [language, retryCounter]);
 
-  // Live Whale Watch SSE (Server-Sent Events via Backend Proxy)
-  useEffect(() => {
-    if (!isProUser) return;
-    
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
-    const eventSource = new EventSource(`${baseUrl}/api/stream/liquidations`);
-    
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (Array.isArray(data) && data.length > 0) {
-          setLiquidations(data);
-        }
-      } catch (e) {
-        // Ignore parsing errors
-      }
-    };
-    
-    eventSource.onerror = () => {
-      setLiquidations([{
-        text: 'WHALE WATCH: RE-ESTABLISHING SECURE UPLINK...',
-        icon: '📡',
-        colorClass: 'text-blue-400',
-        id: 'reconnect_err'
-      }]);
-    };
-
-    return () => eventSource.close();
-  }, [isProUser]);
 
   if (!agreedToTos) {
     return (
@@ -429,6 +442,7 @@ const DashboardContent = () => {
               <div className="lg:col-span-7 flex flex-col gap-4 xl:gap-6">
                 <LiveMetricsHUD fearGreed={data?.Fear_Greed_Score} etfFlow={data?.Net_ETF_Flow} t={t} />
                 <ActionableIntel intel={data?.Actionable_Intel} />
+                <DivergenceMatrix matrixText={data?.Divergence_Matrix} t={t} />
                 <CorporateSentiment sentiment={data?.Corporate_Sentiment} t={t} />
                 <KillZoneTarget 
                   btcTarget={data?.BTC_Kill_Zone} 
@@ -489,44 +503,6 @@ const DashboardContent = () => {
           )}
         </div>
       </main>
-
-      {/* Whale Watch Ticker */}
-      <div className="fixed bottom-[68px] md:bottom-[76px] left-0 w-full bg-[#060b14]/95 border-y border-white/10 py-2.5 z-40 overflow-hidden shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
-        <div className="max-w-7xl mx-auto px-6 relative flex items-center">
-          <div className="absolute left-6 top-1/2 -translate-y-1/2 z-20 bg-[#060b14] px-2 border-r border-white/10 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-            <span className="text-blue-400 font-sans font-bold text-[9px] md:text-[10px] tracking-widest uppercase whitespace-nowrap">{t('whaleWatch')}</span>
-          </div>
-
-          <div className={`relative pl-32 whitespace-nowrap overflow-hidden flex items-center h-5 transition-all duration-300 ${!isProUser ? 'blur-sm select-none opacity-40' : ''}`}>
-            <div className="animate-marquee flex gap-8 min-w-max">
-              {liquidations.length > 0 ? (
-                <>
-                  {liquidations.map(liq => (
-                    <span key={liq.id} className="text-gray-300 font-mono text-xs"><span className={`${liq.colorClass} mr-2`}>{liq.icon}</span> {liq.text}</span>
-                  ))}
-                  {/* Duplicate for infinite loop */}
-                  {liquidations.map(liq => (
-                    <span key={liq.id + '_dup'} className="text-gray-300 font-mono text-xs"><span className={`${liq.colorClass} mr-2`}>{liq.icon}</span> {liq.text}</span>
-                  ))}
-                </>
-              ) : (
-                <span className="text-gray-300 font-mono text-xs animate-pulse">📡 Intercepting live market liquidations...</span>
-              )}
-            </div>
-          </div>
-
-          {!isProUser && (
-            <div className="absolute inset-0 flex items-center justify-center z-30 ml-28">
-              <div className="bg-blue-500/20 border border-blue-500/50 px-3 py-0.5 rounded-full backdrop-blur-md shadow-[0_0_15px_rgba(59,130,246,0.2)]">
-                <span className="text-blue-300 font-sans font-bold text-[9px] tracking-widest uppercase flex items-center gap-1.5">
-                  <Lock size={10} /> Pro Feature
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
 
       {/* Legal Armor Footer */}
       <footer className="fixed bottom-0 w-full border-t border-white/5 bg-[#0a0f1c]/90 backdrop-blur-md py-4 px-6 z-50 text-center">
