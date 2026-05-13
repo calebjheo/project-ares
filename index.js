@@ -122,13 +122,6 @@ async function takeCoinglassScreenshot(ticker) {
         const jsScenario = {
             instructions: [
                 { "evaluate": "if(window.location.href.includes('login') || document.body.innerText.includes('Sign in')) throw new Error('AUTH_FAILED');" },
-                { "click": "input.MuiAutocomplete-input" },
-                { "wait": 1000 },
-                { "evaluate": "const clearBtn = document.querySelector('button[aria-label=\"Clear\"]') || document.querySelector('button[title=\"Clear\"]') || document.querySelector('.MuiAutocomplete-clearIndicator') || document.querySelector('button[aria-label=\"Close\"]'); if(clearBtn) clearBtn.click();" },
-                { "wait": 1000 },
-                { "fill": ["input.MuiAutocomplete-input", ticker] },
-                { "wait_for": "li.MuiAutocomplete-option" },
-                { "click": "li.MuiAutocomplete-option" },
                 { "evaluate": "const style = document.createElement('style'); style.innerHTML = '* { filter: none !important; backdrop-filter: none !important; } div[role=\"dialog\"], .MuiDialog-root, .MuiModal-root { display: none !important; opacity: 0 !important; visibility: hidden !important; }'; document.head.appendChild(style);" },
                 { "wait": 15000 }
             ]
@@ -136,7 +129,7 @@ async function takeCoinglassScreenshot(ticker) {
         
         const params = {
             api_key: process.env.PROXY_API_KEY,
-            url: `https://www.coinglass.com/pro/futures/LiquidationHeatMap`,
+            url: `https://www.coinglass.com/pro/futures/LiquidationHeatMap?symbol=${ticker}`,
             render_js: 'true',
             stealth_proxy: 'true',
             premium_proxy: 'true',
