@@ -117,31 +117,73 @@ async function takeCoinglassScreenshot(ticker) {
         return `PROXY ERROR: PROXY_API_KEY is not defined. Cannot capture heatmap.`;
     }
 
-    console.log(`[+] Taking screenshot for ${ticker} via ScrapingBee API (Coinank)...`);
+    console.log(`[+] Taking screenshot for ${ticker} via ScrapingBee API...`);
     try {
         const jsScenario = {
             instructions: [
-                { "evaluate": "setTimeout(() => { const style = document.createElement('style'); style.innerHTML = '* { filter: none !important; backdrop-filter: none !important; } div[role=\"dialog\"], .modal, .dialog, .MuiDialog-root, .MuiModal-root { display: none !important; opacity: 0 !important; visibility: hidden !important; }'; document.head.appendChild(style); }, 5000);" },
-                { "wait": 10000 }
+                { "evaluate": "if(window.location.href.includes('login') || document.body.innerText.includes('Sign in')) throw new Error('AUTH_FAILED');" },
+                { "evaluate": `
+                    setTimeout(() => {
+                        try {
+                            const input = document.querySelector('input.MuiAutocomplete-input');
+                            if(input) {
+                                input.focus();
+                                const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+                                nativeInputValueSetter.call(input, '${ticker}');
+                                input.dispatchEvent(new Event('input', { bubbles: true }));
+                                
+                                setTimeout(() => {
+                                    try {
+                                        const opts = document.querySelectorAll('li.MuiAutocomplete-option');
+                                        for(let opt of opts) {
+                                            if(opt.innerText && opt.innerText.includes('${ticker}')) {
+                                                opt.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
+                                                opt.click();
+                                                opt.dispatchEvent(new MouseEvent('mouseup', {bubbles: true}));
+                                                break;
+                                            }
+                                        }
+                                    } catch(e) {}
+                                }, 3000);
+                            }
+                        } catch(e) {}
+                    }, 5000);
+                ` },
+                { "evaluate": "setTimeout(() => { const style = document.createElement('style'); style.innerHTML = '* { filter: none !important; backdrop-filter: none !important; } div[role=\"dialog\"], .MuiDialog-root, .MuiModal-root { display: none !important; opacity: 0 !important; visibility: hidden !important; }'; document.head.appendChild(style); }, 8000);" },
+                { "wait": 15000 }
             ]
         };
         
         const params = {
             api_key: process.env.PROXY_API_KEY,
-            url: `https://coinank.com/liqMap?coin=${ticker}`,
+            url: `https://www.coinglass.com/pro/futures/LiquidationHeatMap?symbol=${ticker}`,
             render_js: 'true',
             stealth_proxy: 'true',
             premium_proxy: 'true',
             screenshot: 'true',
             window_width: '1920',
             window_height: '1080',
-            wait: '15000',
+            wait: '25000',
             timeout: '60000',
             js_scenario: JSON.stringify(jsScenario)
         };
 
+        const tokenValue = process.env.COINGLASS_SESSION_COOKIE;
+        const headers = {};
+        
+        if (tokenValue) {
+            // 1. Inject as a Browser Cookie (ScrapingBee format: name=value)
+            params.cookies = `obe=${tokenValue}`;
+            
+            // 2. Inject as a Custom HTTP Header (Fallback for internal API)
+            // ScrapingBee requires forward_headers=true and the Spb- prefix for custom headers
+            params.forward_headers = 'true';
+            headers['Spb-Obe'] = tokenValue;
+        }
+
         const response = await axios.get('https://app.scrapingbee.com/api/v1/', { 
             params,
+            headers,
             responseType: 'arraybuffer',
             timeout: 120000 
         });
@@ -248,7 +290,7 @@ Here is the EXACT JSON format you must follow:\n` +
                               `Raw Farside ETF Data:\n${payload.etfFlow.rawText}\n\n` +
                               `CRITICAL DIRECTIVES:\n` +
                               `1. "Corporate_Sentiment": You MUST analyze the COIN and HOOD stock prices. Output a 2-3 sentence detailed summary. Provide a highly detailed breakdown. YOU MUST TRANSLATE THIS ENTIRE SUMMARY INTO ${lang}. DO NOT OMIT THIS KEY.\n` +
-                              `2. "BTC_Kill_Zone" / "ETH_Kill_Zone" / "SOL_Kill_Zone": Analyze the attached Coinank liquidation heatmaps. Find the heaviest liquidation clusters STRICTLY BELOW the live anchor prices. Format the values WITH a dollar sign and commas (e.g. "$74,800"). IF THE IMAGE IS A CLOUDFLARE CHALLENGE PAGE OR MISSING, YOU MUST OUTPUT "RADAR JAMMED".\n` +
+                              `2. "BTC_Kill_Zone" / "ETH_Kill_Zone" / "SOL_Kill_Zone": Analyze the attached Coinglass liquidation heatmaps. Find the heaviest liquidation clusters STRICTLY BELOW the live anchor prices. Format the values WITH a dollar sign and commas (e.g. "$74,800"). IF THE IMAGE IS A CLOUDFLARE CHALLENGE PAGE OR MISSING, YOU MUST OUTPUT "RADAR JAMMED".\n` +
                               `3. "Actionable_Intel": Provide a highly detailed 3-4 sentence strategic analysis synthesizing ONLY the institutional ETF flows and Kill Zones. YOU MUST TRANSLATE THIS ENTIRE ANALYSIS INTO ${lang}. DO NOT mention retail sentiment, COIN, or HOOD, as that is covered separately.`
                         },
                         ...heatmapParts
