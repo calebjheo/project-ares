@@ -373,12 +373,36 @@ async function runBackgroundSweep() {
     
     try {
         // Run sequentially to prevent 429 Too Many Requests from ScrapingBee's 1 concurrent request limit on free tiers
-        const cryptoData = await fetchCryptoData();
-        const etfFlow = await scrapeFarsideETF();
-        const btcScreenshot = await takeCoinglassScreenshot('BTC');
-        const ethScreenshot = await takeCoinglassScreenshot('ETH');
-        const solScreenshot = await takeCoinglassScreenshot('SOL');
-        const corpData = await fetchCorporateData();
+        let cryptoData = await fetchCryptoData();
+        let etfFlow = await scrapeFarsideETF();
+        
+        let btcScreenshot = await takeCoinglassScreenshot('BTC');
+        if (btcScreenshot.includes('PROXY ERROR') && sharedPayloadCache.payload?.btcScreenshot) {
+            console.log('[-] BTC scraper failed. Retaining last known good cache.');
+            btcScreenshot = sharedPayloadCache.payload.btcScreenshot;
+        }
+        
+        await new Promise(r => setTimeout(r, 15000)); // Delay to prevent burst rate limit
+        
+        let ethScreenshot = await takeCoinglassScreenshot('ETH');
+        if (ethScreenshot.includes('PROXY ERROR') && sharedPayloadCache.payload?.ethScreenshot) {
+            console.log('[-] ETH scraper failed. Retaining last known good cache.');
+            ethScreenshot = sharedPayloadCache.payload.ethScreenshot;
+        }
+        
+        await new Promise(r => setTimeout(r, 15000)); // Delay to prevent burst rate limit
+        
+        let solScreenshot = await takeCoinglassScreenshot('SOL');
+        if (solScreenshot.includes('PROXY ERROR') && sharedPayloadCache.payload?.solScreenshot) {
+            console.log('[-] SOL scraper failed. Retaining last known good cache.');
+            solScreenshot = sharedPayloadCache.payload.solScreenshot;
+        }
+        
+        let corpData = await fetchCorporateData();
+        
+        // Retain fallback data for any other failed API calls if available
+        if (etfFlow.rawText.includes('PROXY ERROR') && sharedPayloadCache.payload?.etfFlow) etfFlow = sharedPayloadCache.payload.etfFlow;
+        if (!corpData && sharedPayloadCache.payload?.corpData) corpData = sharedPayloadCache.payload.corpData;
         
         const payload = {
             cryptoData,
@@ -390,7 +414,7 @@ async function runBackgroundSweep() {
         };
         
         sharedPayloadCache = { payload, timestamp: Date.now() };
-        finalResponseCache = {}; // Clear translation cache
+        finalResponseCache = {}; // Clear translation cache to trigger a fresh Gemini inference
         console.log('[+] Background sweep completed and cached.');
     } catch (e) {
         console.error('[-] Error in background sweep:', e);
