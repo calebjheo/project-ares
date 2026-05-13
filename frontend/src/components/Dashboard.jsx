@@ -348,6 +348,7 @@ const DashboardContent = () => {
                 className="bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 rounded-md px-2 py-1 text-xs outline-none focus:border-blue-500 ml-2 font-sans tracking-widest uppercase cursor-pointer"
               >
                 <option value="EN" className="bg-slate-900">EN</option>
+                <option value="AR" className="bg-slate-900">AR</option>
                 <option value="KO" className="bg-slate-900">KO</option>
                 <option value="ES" className="bg-slate-900">ES</option>
                 <option value="JP" className="bg-slate-900">JP</option>

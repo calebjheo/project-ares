@@ -8,6 +8,11 @@ export const useLanguage = () => useContext(LanguageContext);
 export const LanguageProvider = ({ children }) => {
   const [language, setLanguage] = useState('EN');
 
+  React.useEffect(() => {
+    document.documentElement.dir = language === 'AR' ? 'rtl' : 'ltr';
+    document.documentElement.lang = language.toLowerCase();
+  }, [language]);
+
   const t = (key) => {
     return translations[language]?.[key] || key;
   };
