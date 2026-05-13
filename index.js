@@ -647,21 +647,22 @@ app.get('/api/altcoin', async (req, res) => {
         return res.status(400).json({ error: 'Ticker is required' });
     }
 
-    // Track for background sweep
-    if (!activeAltcoins.has(ticker)) {
-        activeAltcoins.add(ticker);
-        console.log(`[+] New altcoin ${ticker} added to radar tracking.`);
-        
-        // Trigger non-blocking background scrape
-        performAltcoinScrape(ticker);
-        
+    if (altcoinCache[ticker] && (Date.now() - altcoinCache[ticker].timestamp < 20 * 60 * 1000)) {
         return res.json({
-            "Kill_Zone": "AWAITING RADAR SWEEP",
-            "Threat_Level": "PENDING"
+            ...altcoinCache[ticker].data,
+            last_updated: altcoinCache[ticker].timestamp
         });
     }
 
-    if (altcoinCache[ticker]) {
+    // Force await the scrape so the frontend receives the actual data
+    if (!activeAltcoins.has(ticker)) {
+        activeAltcoins.add(ticker);
+        console.log(`[+] New altcoin ${ticker} added to radar tracking.`);
+    }
+    
+    const success = await performAltcoinScrape(ticker);
+    
+    if (success && altcoinCache[ticker]) {
         return res.json({
             ...altcoinCache[ticker].data,
             last_updated: altcoinCache[ticker].timestamp
@@ -669,8 +670,8 @@ app.get('/api/altcoin', async (req, res) => {
     }
 
     return res.json({
-        "Kill_Zone": "CALIBRATING RADAR",
-        "Threat_Level": "PENDING"
+        "Kill_Zone": "RADAR JAMMED",
+        "Threat_Level": "HIGH"
     });
 });
 

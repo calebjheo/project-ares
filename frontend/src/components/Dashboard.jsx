@@ -119,7 +119,7 @@ const AltcoinSlot = ({ id, isProUser }) => {
               </div>
             </div>
           )}
-          <div className={`font-mono font-bold tracking-tight text-center px-1 overflow-hidden text-ellipsis ${targetData.killZone.length > 20 ? 'text-[10px] leading-tight line-clamp-3 whitespace-normal text-white' : `text-xl sm:text-2xl whitespace-nowrap ${threatStyle}`}`}>
+          <div className={`font-mono font-bold tracking-tight text-center px-1 overflow-hidden text-ellipsis ${targetData.killZone.length >= 15 ? 'text-[10px] leading-tight line-clamp-3 whitespace-normal text-white' : `text-xl sm:text-2xl whitespace-nowrap ${threatStyle}`}`}>
             {targetData.killZone}
           </div>
         </div>
