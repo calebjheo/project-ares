@@ -143,25 +143,7 @@ const LiveMetricsHUD = ({ fearGreed, etfFlow, t }) => (
   </div>
 );
 
-const CorporateSentiment = ({ sentiment, t }) => (
-  <div className="flex flex-col h-auto p-5 md:p-8 relative overflow-hidden">
-    {/* Protected Background Layer */}
-    <div className="absolute inset-0 z-0 rounded-2xl border border-white/10 bg-slate-900/40 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] backdrop-blur-md"></div>
-    <div className="relative z-10 flex items-center gap-3 mb-4 border-b border-white/5 pb-4">
-      <div className="p-1.5 bg-purple-500/20 rounded-md border border-purple-500/30">
-        <Activity size={16} className="text-purple-400" />
-      </div>
-      <h3 className="font-sans font-bold text-[10px] md:text-xs text-purple-400 tracking-[0.2em] uppercase">
-        {t('retailBrokerHealth') || 'Retail Broker Health'}
-      </h3>
-    </div>
-    <div className="font-sans text-sm md:text-base text-gray-300 leading-relaxed border-l-2 border-purple-500/50 pl-4 py-1 relative z-10">
-      {sentiment || 'Scanning corporate order flows...'}
-    </div>
-  </div>
-);
-
-const DivergenceMatrix = ({ matrixText, t }) => {
+const DivergenceMatrix = ({ matrixText, sentimentText, t }) => {
   let headerColor = "text-gray-400";
   let borderColor = "border-gray-500/30";
   let bgColor = "bg-gray-500/20";
@@ -188,6 +170,8 @@ const DivergenceMatrix = ({ matrixText, t }) => {
     <div className="flex flex-col h-auto p-5 md:p-8 relative overflow-hidden">
       {/* Protected Background Layer */}
       <div className="absolute inset-0 z-0 rounded-2xl border border-white/10 bg-slate-900/40 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] backdrop-blur-md"></div>
+      
+      {/* Matrix Logic */}
       <div className="relative z-10 flex items-center gap-3 mb-4 border-b border-white/5 pb-4">
         <div className={`p-1.5 ${bgColor} rounded-md border ${borderColor}`}>
           <Activity size={16} className={iconColor} />
@@ -196,8 +180,21 @@ const DivergenceMatrix = ({ matrixText, t }) => {
           DIVERGENCE MATRIX
         </h3>
       </div>
-      <div className={`font-sans text-sm md:text-base text-gray-300 leading-relaxed border-l-2 ${borderColor} pl-4 py-1 relative z-10`}>
+      <div className={`font-sans text-sm md:text-base text-gray-300 leading-relaxed border-l-2 ${borderColor} pl-4 py-1 relative z-10 mb-8`}>
         {matrixText || 'Calculating divergence vectors...'}
+      </div>
+
+      {/* Retail Broker Health */}
+      <div className="relative z-10 flex items-center gap-3 mb-4 border-b border-white/5 pb-4">
+        <div className="p-1.5 bg-purple-500/20 rounded-md border border-purple-500/30">
+          <Activity size={16} className="text-purple-400" />
+        </div>
+        <h3 className="font-sans font-bold text-[10px] md:text-xs text-purple-400 tracking-[0.2em] uppercase">
+          {t('retailBrokerHealth') || 'Retail Broker Health'}
+        </h3>
+      </div>
+      <div className="font-sans text-sm md:text-base text-gray-300 leading-relaxed border-l-2 border-purple-500/50 pl-4 py-1 relative z-10">
+        {sentimentText || 'Scanning corporate order flows...'}
       </div>
     </div>
   );
@@ -442,8 +439,7 @@ const DashboardContent = () => {
               <div className="lg:col-span-7 flex flex-col gap-4 xl:gap-6">
                 <LiveMetricsHUD fearGreed={data?.Fear_Greed_Score} etfFlow={data?.Net_ETF_Flow} t={t} />
                 <ActionableIntel intel={data?.Actionable_Intel} />
-                <DivergenceMatrix matrixText={data?.Divergence_Matrix} t={t} />
-                <CorporateSentiment sentiment={data?.Corporate_Sentiment} t={t} />
+                <DivergenceMatrix matrixText={data?.Divergence_Matrix} sentimentText={data?.Corporate_Sentiment} t={t} />
                 <KillZoneTarget 
                   btcTarget={data?.BTC_Kill_Zone} 
                   ethTarget={data?.ETH_Kill_Zone} 
