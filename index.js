@@ -119,13 +119,20 @@ async function takeCoinglassScreenshot(ticker) {
 
     console.log(`[+] Taking screenshot for ${ticker} via ScrapingBee API...`);
     try {
-        // Drastically simplified scenario: just bypass login and remove overlays
         const jsScenario = {
             instructions: [
                 { "evaluate": "if(window.location.href.includes('login') || document.body.innerText.includes('Sign in')) throw new Error('AUTH_FAILED');" },
-                { "wait": 10000 },
+                { "wait_for": "input.MuiAutocomplete-input" },
+                { "wait": 1000 },
+                { "evaluate": "const input = document.querySelector('input.MuiAutocomplete-input'); if(input) { input.id = 'target-heatmap-input'; input.focus(); input.setSelectionRange(0, input.value.length); }" },
+                { "wait": 1000 },
+                { "fill": ["#target-heatmap-input", ticker] },
+                { "wait_for": "li.MuiAutocomplete-option" },
+                { "wait": 1000 },
+                { "evaluate": `const opts = document.querySelectorAll('li.MuiAutocomplete-option'); for(let opt of opts) { if(opt.innerText.trim() === '${ticker}') { opt.dispatchEvent(new MouseEvent('mousedown', {bubbles: true})); opt.click(); opt.dispatchEvent(new MouseEvent('mouseup', {bubbles: true})); break; } }` },
+                { "wait": 5000 },
                 { "evaluate": "const style = document.createElement('style'); style.innerHTML = '* { filter: none !important; backdrop-filter: none !important; } div[role=\"dialog\"], .MuiDialog-root, .MuiModal-root { display: none !important; opacity: 0 !important; visibility: hidden !important; }'; document.head.appendChild(style);" },
-                { "wait": 5000 }
+                { "wait": 15000 }
             ]
         };
         
@@ -138,7 +145,7 @@ async function takeCoinglassScreenshot(ticker) {
             screenshot: 'true',
             window_width: '1920',
             window_height: '1080',
-            wait: '10000',
+            wait: '25000',
             js_scenario: JSON.stringify(jsScenario)
         };
 
@@ -629,10 +636,20 @@ async function pollWhaleWatch() {
             }
         });
         
-        if (response.data && Array.isArray(response.data)) {
+        let parsedData = response.data;
+        if (typeof parsedData === 'string') {
+            try {
+                parsedData = JSON.parse(parsedData);
+            } catch (e) {
+                // Not JSON, ignore
+                return;
+            }
+        }
+        
+        if (parsedData && Array.isArray(parsedData)) {
             let hasNewData = false;
             
-            const newLiquidations = response.data
+            const newLiquidations = parsedData
                 .map(order => {
                     const size = parseFloat(order.origQty) * parseFloat(order.price);
                     if (size <= 1000) return null;
