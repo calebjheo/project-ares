@@ -11,7 +11,12 @@ const LandingPage = () => {
       
       {/* Navigation Bar */}
       <nav className="w-full max-w-7xl mx-auto px-6 py-6 flex justify-between items-center relative z-20">
-        <AresLogo />
+        <div className="flex items-center gap-2">
+          <AresLogo className="w-8 h-8 md:w-10 md:h-10 text-blue-500" animated={true} />
+          <span className="font-sans font-bold tracking-widest text-base md:text-lg text-white">
+            PROJECT ARES
+          </span>
+        </div>
         <button 
           onClick={() => navigate('/dashboard')}
           className="text-sm font-bold tracking-widest text-gray-300 hover:text-white transition-colors"
