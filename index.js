@@ -164,6 +164,7 @@ async function takeCoinglassScreenshot(ticker) {
             window_width: '1920',
             window_height: '1080',
             wait: '25000',
+            timeout: '60000',
             js_scenario: JSON.stringify(jsScenario)
         };
 
@@ -650,9 +651,9 @@ async function pollWhaleWatch() {
             params: {
                 api_key: process.env.PROXY_API_KEY,
                 url: 'https://fapi.binance.com/fapi/v1/allForceOrders',
-                country_code: 'ch',
+                country_code: 'jp',
                 render_js: 'false',
-                premium_proxy: 'true'
+                stealth_proxy: 'true'
             }
         });
         
