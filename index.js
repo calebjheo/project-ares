@@ -576,32 +576,84 @@ async function analyzeAltcoinHeatmap(ticker, base64Image) {
     }
 }
 
+const altcoinCache = {};
+const activeAltcoins = new Set();
+let isAltcoinSweeping = false;
+
+async function performAltcoinScrape(ticker) {
+    try {
+        const screenshot = await takeCoinglassScreenshot(ticker);
+        if (screenshot && !screenshot.includes('PROXY ERROR') && !screenshot.includes('AUTH_FAILED')) {
+            const jsonResult = await analyzeAltcoinHeatmap(ticker, screenshot);
+            if (jsonResult) {
+                altcoinCache[ticker] = {
+                    data: {
+                        "Kill_Zone": jsonResult.Kill_Zone || "RADAR JAMMED",
+                        "Threat_Level": jsonResult.Threat_Level || "HIGH"
+                    },
+                    timestamp: Date.now()
+                };
+                console.log(`[+] Altcoin cache updated for ${ticker}`);
+                return true;
+            }
+        } else {
+            console.log(`[-] Scraper failed for ${ticker}, keeping last known good cache.`);
+        }
+    } catch (error) {
+        console.error(`Error scraping altcoin ${ticker}:`, error.message);
+    }
+    return false;
+}
+
+async function runAltcoinSweep() {
+    if (isAltcoinSweeping) return;
+    isAltcoinSweeping = true;
+    console.log(`[+] Starting background altcoin sweep for ${activeAltcoins.size} tickers...`);
+    
+    for (const ticker of activeAltcoins) {
+        await performAltcoinScrape(ticker);
+        // 15 second delay between requests to avoid rate limits
+        await new Promise(resolve => setTimeout(resolve, 15000));
+    }
+    
+    console.log(`[+] Background altcoin sweep complete.`);
+    isAltcoinSweeping = false;
+}
+
+// 20-minute interval
+setInterval(runAltcoinSweep, 20 * 60 * 1000);
+
 app.get('/api/altcoin', async (req, res) => {
     const ticker = req.query.ticker?.toUpperCase();
     if (!ticker) {
         return res.status(400).json({ error: 'Ticker is required' });
     }
 
-    console.log(`API Request: Fetching altcoin radar for ${ticker}...`);
-    try {
-        const screenshot = await takeCoinglassScreenshot(ticker);
-        const jsonResult = await analyzeAltcoinHeatmap(ticker, screenshot);
+    // Track for background sweep
+    if (!activeAltcoins.has(ticker)) {
+        activeAltcoins.add(ticker);
+        console.log(`[+] New altcoin ${ticker} added to radar tracking.`);
         
-        if (!jsonResult) {
-            return res.status(500).json({ error: 'Failed to analyze heatmap data' });
-        }
+        // Trigger non-blocking background scrape
+        performAltcoinScrape(ticker);
         
-        // Ensure final shape is strictly adhered to so UI doesn't crash
-        const finalJson = {
-            "Kill_Zone": jsonResult.Kill_Zone || "RADAR JAMMED",
-            "Threat_Level": jsonResult.Threat_Level || "HIGH"
-        };
-        
-        res.json(finalJson);
-    } catch (error) {
-        console.error(`Error handling /api/altcoin request for ${ticker}:`, error);
-        res.status(500).json({ error: 'Internal server error while evaluating altcoin.' });
+        return res.json({
+            "Kill_Zone": "AWAITING RADAR SWEEP",
+            "Threat_Level": "PENDING"
+        });
     }
+
+    if (altcoinCache[ticker]) {
+        return res.json({
+            ...altcoinCache[ticker].data,
+            last_updated: altcoinCache[ticker].timestamp
+        });
+    }
+
+    return res.json({
+        "Kill_Zone": "CALIBRATING RADAR",
+        "Threat_Level": "PENDING"
+    });
 });
 
 
