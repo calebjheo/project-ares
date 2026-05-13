@@ -122,6 +122,14 @@ async function takeCoinglassScreenshot(ticker) {
         const jsScenario = {
             instructions: [
                 { "evaluate": "if(window.location.href.includes('login') || document.body.innerText.includes('Sign in')) throw new Error('AUTH_FAILED');" },
+                { "click": "input.MuiAutocomplete-input" },
+                { "wait": 1000 },
+                { "evaluate": "const clearBtn = document.querySelector('button[aria-label=\"Clear\"]') || document.querySelector('button[title=\"Clear\"]') || document.querySelector('.MuiAutocomplete-clearIndicator') || document.querySelector('button[aria-label=\"Close\"]'); if(clearBtn) clearBtn.click();" },
+                { "wait": 1000 },
+                { "fill": ["input.MuiAutocomplete-input", ticker] },
+                { "wait_for": "li.MuiAutocomplete-option" },
+                { "click": "li.MuiAutocomplete-option" },
+                { "wait": 2000 },
                 { "evaluate": "const style = document.createElement('style'); style.innerHTML = '* { filter: none !important; backdrop-filter: none !important; } div[role=\"dialog\"], .MuiDialog-root, .MuiModal-root { display: none !important; opacity: 0 !important; visibility: hidden !important; }'; document.head.appendChild(style);" },
                 { "wait": 15000 }
             ]
@@ -129,7 +137,7 @@ async function takeCoinglassScreenshot(ticker) {
         
         const params = {
             api_key: process.env.PROXY_API_KEY,
-            url: `https://www.coinglass.com/pro/futures/LiquidationHeatMap?symbol=${ticker}`,
+            url: `https://www.coinglass.com/pro/futures/LiquidationHeatMap`,
             render_js: 'true',
             stealth_proxy: 'true',
             premium_proxy: 'true',
@@ -693,29 +701,38 @@ let reconnectTimeout = null;
 
 function initWhaleWatchStream() {
     console.log('[+] Initializing Whale Watch WebSocket...');
-    const ws = new WebSocket('wss://fstream.binance.com/ws/!forceOrder@arr');
+    const ws = new WebSocket('wss://stream.bybit.com/v5/public/linear');
     
     ws.on('open', () => {
         console.log('[+] Whale Watch Uplink Established (Direct Backend Stream)');
         lastWhaleError = "Connected successfully";
+        const subscribeMsg = {
+            "op": "subscribe",
+            "args": [
+                "allLiquidation.BTCUSDT",
+                "allLiquidation.ETHUSDT",
+                "allLiquidation.SOLUSDT"
+            ]
+        };
+        ws.send(JSON.stringify(subscribeMsg));
     });
     
     ws.on('message', (data) => {
         try {
             const payload = JSON.parse(data);
-            if (payload.e === 'forceOrder') {
-                const order = payload.o;
-                const size = (parseFloat(order.q) * parseFloat(order.p));
+            if (payload.topic && payload.topic.startsWith('allLiquidation.')) {
+                const order = payload.data;
+                const size = parseFloat(order.size) * parseFloat(order.price);
                 
                 if (size > 1000) {
-                    const isLong = order.S === 'SELL';
+                    const isLong = order.side === 'Buy'; 
                     const formattedSize = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(size);
-                    const sideText = isLong ? 'Longs Liquidated' : 'Shorts Liquidated';
-                    const icon = isLong ? '🚨' : '🟢';
-                    const colorClass = isLong ? 'text-red-400' : 'text-green-400';
-                    const liqText = `${formattedSize} ${order.s.replace('USDT', '')} ${sideText}`;
+                    const sideText = isLong ? 'Shorts Liquidated' : 'Longs Liquidated';
+                    const icon = isLong ? '🟢' : '🚨';
+                    const colorClass = isLong ? 'text-green-400' : 'text-red-400';
+                    const liqText = `${formattedSize} ${order.symbol.replace('USDT', '')} ${sideText}`;
                     
-                    const newLiq = { text: liqText, icon, colorClass, id: payload.E + order.s };
+                    const newLiq = { text: liqText, icon, colorClass, id: payload.id || Date.now().toString() };
                     recentLiquidations.unshift(newLiq);
                     recentLiquidations = recentLiquidations.slice(0, 15);
                     
