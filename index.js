@@ -272,7 +272,26 @@ Here is the EXACT JSON format you must follow:\n` +
             ],
             generationConfig: {
                 temperature: 0.2,
-                responseMimeType: "application/json"
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: "OBJECT",
+                    properties: {
+                        Market_Posture: { type: "STRING" },
+                        Fear_Greed_Score: { type: "STRING" },
+                        Corporate_Sentiment: { type: "STRING" },
+                        Net_ETF_Flow: { type: "STRING" },
+                        Divergence_Matrix: { type: "STRING" },
+                        Actionable_Intel: { type: "STRING" },
+                        BTC_Kill_Zone: { type: "STRING" },
+                        ETH_Kill_Zone: { type: "STRING" },
+                        SOL_Kill_Zone: { type: "STRING" }
+                    },
+                    required: [
+                        "Market_Posture", "Fear_Greed_Score", "Corporate_Sentiment", 
+                        "Net_ETF_Flow", "Divergence_Matrix", "Actionable_Intel", 
+                        "BTC_Kill_Zone", "ETH_Kill_Zone", "SOL_Kill_Zone"
+                    ]
+                }
             }
         };
 
