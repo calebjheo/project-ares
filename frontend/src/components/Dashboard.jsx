@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useUser, UserButton } from '@clerk/clerk-react';
 import PostureShield from './PostureShield';
 import ActionableIntel from './ActionableIntel';
 import KillZoneTarget from './KillZoneTarget';
@@ -212,12 +213,16 @@ const DashboardContent = () => {
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
-  const [isProUser, setIsProUser] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('ares_pro_status') === 'active';
+  const { user } = useUser();
+  const [isProUser, setIsProUser] = useState(false);
+
+  useEffect(() => {
+    if (user?.publicMetadata?.isSubscribed) {
+      setIsProUser(true);
+    } else {
+      setIsProUser(localStorage.getItem('ares_pro_status') === 'active');
     }
-    return false;
-  });
+  }, [user]);
   const [lastSweep, setLastSweep] = useState('');
   const [retryCounter, setRetryCounter] = useState(0);
 
@@ -235,12 +240,29 @@ const DashboardContent = () => {
     
     // Auth Wall Logic: If from landing page CTA, open modal
     const locationParams = new URLSearchParams(location.search);
-    if (locationParams.get('auth') === 'true') {
+    if (locationParams.get('checkout') === 'true' && user) {
+      const initCheckout = async () => {
+        try {
+          const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/create-checkout-session`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ clerkUserId: user.id })
+          });
+          const data = await res.json();
+          if (data.url) {
+            window.location.href = data.url;
+          }
+        } catch (error) {
+          console.error("Checkout error:", error);
+        }
+      };
+      initCheckout();
+      window.history.replaceState(null, '', window.location.pathname);
+    } else if (locationParams.get('auth') === 'true') {
       setIsUpgradeModalOpen(true);
-      // Clean URL silently so refresh doesn't reopen modal
       window.history.replaceState(null, '', window.location.pathname);
     }
-  }, [location.search]);
+  }, [location.search, user]);
 
   useEffect(() => {
     // Set initial last sweep time
@@ -353,6 +375,9 @@ const DashboardContent = () => {
                 <BookText size={12} className="md:w-3.5 md:h-3.5" />
                 {t('fieldManual')}
               </button>
+              
+              <UserButton afterSignOutUrl="/" />
+
               <select 
                 value={language} 
                 onChange={(e) => setLanguage(e.target.value)}

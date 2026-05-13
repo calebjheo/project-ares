@@ -1,7 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShieldAlert, Activity, Target } from 'lucide-react';
+import { SignInButton, SignUpButton, useAuth } from '@clerk/clerk-react';
 import AresLogo from './AresLogo';
+import dashboardImg from '../assets/dashboard.png';
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -17,12 +19,11 @@ const LandingPage = () => {
             PROJECT ARES
           </span>
         </div>
-        <button 
-          onClick={() => navigate('/dashboard')}
-          className="text-sm font-bold tracking-widest text-gray-300 hover:text-white transition-colors"
-        >
-          LOGIN
-        </button>
+        <SignInButton mode="modal" forceRedirectUrl="/dashboard">
+          <button className="text-sm font-bold tracking-widest text-gray-300 hover:text-white transition-colors cursor-pointer">
+            LOGIN
+          </button>
+        </SignInButton>
       </nav>
 
       {/* Hero Section */}
@@ -47,27 +48,21 @@ const LandingPage = () => {
             Institutional-grade risk synthesis for retail crypto traders. Track live algorithmic Kill Zones and ETF divergence. <strong className="text-gray-200">Stop being exit liquidity.</strong>
           </p>
 
-          <button 
-            onClick={() => navigate('/dashboard?auth=true')}
-            className="group relative px-8 py-4 bg-white text-slate-950 font-bold text-lg md:text-xl rounded-full overflow-hidden transition-transform hover:scale-105 active:scale-95 shadow-[0_0_40px_rgba(255,255,255,0.2)]"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-100 to-purple-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <span className="relative z-10 flex items-center gap-2">
-              Start 7-Day Free Trial
-            </span>
-          </button>
+          <SignUpButton mode="modal" forceRedirectUrl="/dashboard?checkout=true">
+            <button className="group relative px-8 py-4 bg-white text-slate-950 font-bold text-lg md:text-xl rounded-full overflow-hidden transition-transform hover:scale-105 active:scale-95 shadow-[0_0_40px_rgba(255,255,255,0.2)]">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-100 to-purple-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <span className="relative z-10 flex items-center gap-2">
+                Start 7-Day Free Trial
+              </span>
+            </button>
+          </SignUpButton>
         </div>
 
         {/* Dashboard Placeholder */}
         <div className="relative z-10 w-full max-w-6xl mx-auto mt-24">
           <div className="aspect-[16/9] w-full rounded-2xl border border-white/10 bg-slate-900/50 backdrop-blur-xl shadow-[0_0_100px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col items-center justify-center group relative">
              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent z-10"></div>
-             
-             {/* Replace this div with an actual <img> tag when screenshots are ready */}
-             <div className="flex flex-col items-center text-gray-600 gap-4 opacity-50 group-hover:opacity-100 transition-opacity z-0">
-               <Target size={48} strokeWidth={1} />
-               <p className="font-mono tracking-widest text-sm uppercase">Dashboard Screenshot Container</p>
-             </div>
+             <img src={dashboardImg} alt="Project ARES Dashboard" className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity relative z-0" />
           </div>
         </div>
       </main>

@@ -5,6 +5,7 @@ const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const { clerkClient } = require('@clerk/clerk-sdk-node');
 const jwt = require('jsonwebtoken');
 const { HttpsProxyAgent } = require('https-proxy-agent');
 const WebSocket = require('ws');
@@ -314,7 +315,70 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors());
+
+// Stripe Webhook (Must use raw body parser before express.json)
+app.post('/api/webhook/stripe', express.raw({type: 'application/json'}), async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    let event;
+    try {
+        event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    } catch (err) {
+        console.error(`Webhook Error: ${err.message}`);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    if (event.type === 'checkout.session.completed' || event.type === 'customer.subscription.updated') {
+        const session = event.data.object;
+        const clerkUserId = session.client_reference_id; // Passed when creating checkout session
+        
+        if (clerkUserId) {
+            try {
+                await clerkClient.users.updateUserMetadata(clerkUserId, {
+                    publicMetadata: {
+                        isSubscribed: true
+                    }
+                });
+                console.log(`[+] Granted PRO access to user ${clerkUserId} from Stripe Webhook`);
+            } catch (error) {
+                console.error('[-] Error updating Clerk metadata:', error);
+            }
+        }
+    }
+
+    res.json({received: true});
+});
+
 app.use(express.json());
+
+// Stripe Checkout Session
+app.post('/api/create-checkout-session', async (req, res) => {
+    try {
+        const { clerkUserId } = req.body;
+        if (!clerkUserId) {
+            return res.status(400).json({ error: 'clerkUserId is required' });
+        }
+        
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            mode: 'subscription',
+            client_reference_id: clerkUserId,
+            line_items: [{
+                // Using a generic/placeholder price ID, configure this in Stripe
+                price: process.env.STRIPE_PRICE_ID || 'price_1Placeholder', 
+                quantity: 1,
+            }],
+            success_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard?success=true`,
+            cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/`,
+            subscription_data: {
+                trial_period_days: 7,
+            }
+        });
+        res.json({ url: session.url });
+    } catch (error) {
+        console.error('[-] Error creating checkout session:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
 
 // Trust the Render proxy so rate limiting works per user IP instead of banning everyone
 app.set('trust proxy', 1);
