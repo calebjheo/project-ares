@@ -143,7 +143,10 @@ const enTranslations = {
   "fmUc1Execution": "Execution: Your pre-placed Limit Buy inside the Kill Zone triggers. You instantly profit as the market rebounds from the forced liquidations.",
   "fmUc2Title": "Scenario 2: Institutional Distribution",
   "fmUc2Scenario": "Market Posture shifts to DANGER. ETF Flows are deeply negative, but retail sentiment is 'Extreme Greed'.",
-  "fmUc2Execution": "Execution: You sell your long positions into the retail liquidity before the inevitable crash."
+  "fmUc2Execution": "Execution: You sell your long positions into the retail liquidity before the inevitable crash.",
+  "threatHighRisk": "HIGH RISK",
+  "threatElevatedRisk": "ELEVATED RISK",
+  "threatStableRisk": "STABLE RISK"
 };
 
 const targetLanguages = [
