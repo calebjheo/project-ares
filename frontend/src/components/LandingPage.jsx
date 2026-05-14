@@ -71,10 +71,17 @@ const LandingPage = () => {
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[400px] bg-purple-600/10 rounded-full blur-[100px] pointer-events-none"></div>
 
         <div className="relative z-10 max-w-4xl mx-auto">
-          <div className="inline-block px-3 py-1 mb-6 rounded-full border border-blue-500/30 bg-blue-500/10 backdrop-blur-sm">
-            <span className="text-[10px] md:text-xs font-mono tracking-[0.2em] text-blue-400 uppercase">
-              V3.7 Radar Online
-            </span>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6">
+            <div className="inline-block px-3 py-1 rounded-full border border-blue-500/30 bg-blue-500/10 backdrop-blur-sm">
+              <span className="text-[10px] md:text-xs font-mono tracking-[0.2em] text-blue-400 uppercase">
+                V3.7 Radar Online
+              </span>
+            </div>
+            <div className="inline-block px-3 py-1 rounded-full border border-yellow-500/30 bg-yellow-500/10 backdrop-blur-sm">
+              <span className="text-[10px] md:text-xs font-mono tracking-[0.2em] text-yellow-400 uppercase flex items-center gap-1.5">
+                <span>⚡</span> DESIGNED FOR THE POST-CLARITY ACT ERA
+              </span>
+            </div>
           </div>
           
           <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-8 drop-shadow-2xl text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400">
