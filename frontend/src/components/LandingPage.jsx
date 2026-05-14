@@ -1,7 +1,7 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ShieldAlert, Activity, Target } from 'lucide-react';
-import { SignInButton, SignUpButton, useAuth } from '@clerk/clerk-react';
+import { SignInButton, SignUpButton, SignedIn, SignedOut, useAuth } from '@clerk/clerk-react';
 import AresLogo from './AresLogo';
 import dashboardImg from '../assets/dashboard.png';
 
@@ -19,11 +19,20 @@ const LandingPage = () => {
             PROJECT ARES
           </span>
         </div>
-        <SignInButton mode="modal" forceRedirectUrl="/dashboard">
-          <button className="text-sm font-bold tracking-widest text-gray-300 hover:text-white transition-colors cursor-pointer">
-            LOGIN
-          </button>
-        </SignInButton>
+        <SignedIn>
+          <Link to="/dashboard">
+            <button className="text-sm font-bold tracking-widest text-blue-400 hover:text-blue-300 transition-colors cursor-pointer">
+              DASHBOARD
+            </button>
+          </Link>
+        </SignedIn>
+        <SignedOut>
+          <SignInButton mode="modal" forceRedirectUrl="/dashboard">
+            <button className="text-sm font-bold tracking-widest text-gray-300 hover:text-white transition-colors cursor-pointer">
+              LOGIN
+            </button>
+          </SignInButton>
+        </SignedOut>
       </nav>
 
       {/* Hero Section */}
@@ -48,14 +57,26 @@ const LandingPage = () => {
             Institutional-grade risk synthesis for retail crypto traders. Track live algorithmic Kill Zones and ETF divergence. <strong className="text-gray-200">Stop being exit liquidity.</strong>
           </p>
 
-          <SignUpButton mode="modal" forceRedirectUrl="/dashboard?checkout=true">
-            <button className="group relative px-8 py-4 bg-white text-slate-950 font-bold text-lg md:text-xl rounded-full overflow-hidden transition-transform hover:scale-105 active:scale-95 shadow-[0_0_40px_rgba(255,255,255,0.2)]">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-100 to-purple-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <span className="relative z-10 flex items-center gap-2">
-                Start 7-Day Free Trial
-              </span>
-            </button>
-          </SignUpButton>
+          <SignedIn>
+            <Link to="/dashboard">
+              <button className="group relative px-8 py-4 bg-white text-slate-950 font-bold text-lg md:text-xl rounded-full overflow-hidden transition-transform hover:scale-105 active:scale-95 shadow-[0_0_40px_rgba(255,255,255,0.2)]">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-100 to-purple-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <span className="relative z-10 flex items-center gap-2">
+                  Enter Dashboard
+                </span>
+              </button>
+            </Link>
+          </SignedIn>
+          <SignedOut>
+            <SignUpButton mode="modal" forceRedirectUrl="/dashboard?checkout=true">
+              <button className="group relative px-8 py-4 bg-white text-slate-950 font-bold text-lg md:text-xl rounded-full overflow-hidden transition-transform hover:scale-105 active:scale-95 shadow-[0_0_40px_rgba(255,255,255,0.2)]">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-100 to-purple-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <span className="relative z-10 flex items-center gap-2">
+                  Start 7-Day Free Trial
+                </span>
+              </button>
+            </SignUpButton>
+          </SignedOut>
         </div>
 
         {/* Dashboard Placeholder */}

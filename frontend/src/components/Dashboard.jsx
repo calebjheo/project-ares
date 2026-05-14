@@ -220,7 +220,7 @@ const DashboardContent = () => {
     if (user?.publicMetadata?.isSubscribed) {
       setIsProUser(true);
     } else {
-      setIsProUser(localStorage.getItem('ares_pro_status') === 'active');
+      setIsProUser(false);
     }
   }, [user]);
   const [lastSweep, setLastSweep] = useState('');
@@ -229,12 +229,9 @@ const DashboardContent = () => {
   const location = useLocation();
 
   useEffect(() => {
-    // MVP Auth Logic: Check URL for success parameter from Stripe
+    // Clean URL if returning from Stripe checkout success
     const params = new URLSearchParams(window.location.search);
     if (params.get('success') === 'true') {
-      localStorage.setItem('ares_pro_status', 'active');
-      setIsProUser(true);
-      // Clean URL silently
       window.history.replaceState(null, '', window.location.pathname);
     }
     
