@@ -80,7 +80,7 @@ const LandingPage = () => {
         </div>
 
         {/* Dashboard Placeholder */}
-        <div className="relative z-10 w-full max-w-6xl mx-auto mt-24">
+        <div className="relative z-10 w-full max-w-5xl mx-auto mt-24">
           <div className="aspect-[16/9] w-full rounded-2xl border border-white/10 bg-slate-900/50 backdrop-blur-xl shadow-[0_0_100px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col items-center justify-center group relative">
              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent z-10"></div>
              <img src={dashboardImg} alt="Project ARES Dashboard" className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity relative z-0" />
