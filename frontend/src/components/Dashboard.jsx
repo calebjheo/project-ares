@@ -353,6 +353,9 @@ const DashboardContent = () => {
                 <p className="font-sans text-[10px] md:text-xs text-gray-500 tracking-[0.2em] uppercase font-semibold">
                   Quantitative Risk Engine
                 </p>
+                <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-[8px] md:text-[10px] font-bold tracking-widest uppercase shadow-[0_0_10px_rgba(234,179,8,0.1)] w-max">
+                  <span>⚡</span> POST-CLARITY ACT ERA
+                </div>
               </div>
             </div>
 
