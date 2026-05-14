@@ -36,7 +36,7 @@ const LandingPage = () => {
       </nav>
 
       {/* Hero Section */}
-      <main className="relative pt-20 pb-32 flex flex-col items-center text-center px-4">
+      <main className="relative pt-20 pb-12 flex flex-col items-center text-center px-4">
         {/* Background Gradients */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[400px] bg-purple-600/10 rounded-full blur-[100px] pointer-events-none"></div>
@@ -89,7 +89,7 @@ const LandingPage = () => {
       </main>
 
       {/* Features Grid */}
-      <section className="relative z-10 bg-slate-950 py-32 px-6 border-t border-white/5">
+      <section className="relative z-10 bg-slate-950 pt-16 pb-32 px-6 border-t border-white/5">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
           
           {/* Feature 1 */}
