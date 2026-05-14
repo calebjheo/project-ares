@@ -382,9 +382,22 @@ const DashboardContent = () => {
               >
                 <option value="EN" className="bg-slate-900">EN</option>
                 <option value="AR" className="bg-slate-900">AR</option>
-                <option value="KO" className="bg-slate-900">KO</option>
+                <option value="BN" className="bg-slate-900">BN</option>
+                <option value="DE" className="bg-slate-900">DE</option>
                 <option value="ES" className="bg-slate-900">ES</option>
+                <option value="FR" className="bg-slate-900">FR</option>
+                <option value="HI" className="bg-slate-900">HI</option>
+                <option value="ID" className="bg-slate-900">ID</option>
                 <option value="JP" className="bg-slate-900">JP</option>
+                <option value="KO" className="bg-slate-900">KO</option>
+                <option value="PT" className="bg-slate-900">PT</option>
+                <option value="RU" className="bg-slate-900">RU</option>
+                <option value="TH" className="bg-slate-900">TH</option>
+                <option value="TL" className="bg-slate-900">TL</option>
+                <option value="TR" className="bg-slate-900">TR</option>
+                <option value="UK" className="bg-slate-900">UK</option>
+                <option value="UR" className="bg-slate-900">UR</option>
+                <option value="VI" className="bg-slate-900">VI</option>
                 <option value="ZH" className="bg-slate-900">ZH</option>
               </select>
             </div>
@@ -554,10 +567,4 @@ const DashboardContent = () => {
   );
 };
 
-const Dashboard = () => (
-  <LanguageProvider>
-    <DashboardContent />
-  </LanguageProvider>
-);
-
-export default Dashboard;
+export default DashboardContent;

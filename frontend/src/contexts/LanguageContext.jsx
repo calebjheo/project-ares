@@ -6,9 +6,12 @@ const LanguageContext = createContext();
 export const useLanguage = () => useContext(LanguageContext);
 
 export const LanguageProvider = ({ children }) => {
-  const [language, setLanguage] = useState('EN');
+  const [language, setLanguage] = useState(() => {
+    return localStorage.getItem('ares_language') || 'EN';
+  });
 
   React.useEffect(() => {
+    localStorage.setItem('ares_language', language);
     document.documentElement.dir = language === 'AR' ? 'rtl' : 'ltr';
     document.documentElement.lang = language.toLowerCase();
   }, [language]);

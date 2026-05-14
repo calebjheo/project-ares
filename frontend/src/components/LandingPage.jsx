@@ -2,11 +2,13 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShieldAlert, Activity, Target } from 'lucide-react';
 import { SignInButton, SignUpButton, SignedIn, SignedOut, useAuth } from '@clerk/clerk-react';
+import { useLanguage } from '../contexts/LanguageContext';
 import AresLogo from './AresLogo';
 import dashboardImg from '../assets/dashboard.png';
 
 const LandingPage = () => {
   const navigate = useNavigate();
+  const { language, setLanguage, t } = useLanguage();
 
   return (
     <div className="min-h-screen bg-slate-950 text-white font-sans overflow-x-hidden selection:bg-blue-500/30">
@@ -19,20 +21,47 @@ const LandingPage = () => {
             PROJECT ARES
           </span>
         </div>
-        <SignedIn>
-          <Link to="/dashboard">
-            <button className="text-sm font-bold tracking-widest text-blue-400 hover:text-blue-300 transition-colors cursor-pointer">
-              DASHBOARD
-            </button>
-          </Link>
-        </SignedIn>
-        <SignedOut>
-          <SignInButton mode="modal" forceRedirectUrl="/dashboard">
-            <button className="text-sm font-bold tracking-widest text-gray-300 hover:text-white transition-colors cursor-pointer">
-              LOGIN
-            </button>
-          </SignInButton>
-        </SignedOut>
+        <div className="flex items-center gap-4">
+          <SignedIn>
+            <Link to="/dashboard">
+              <button className="text-sm font-bold tracking-widest text-blue-400 hover:text-blue-300 transition-colors cursor-pointer">
+                {t('lpDashboard')}
+              </button>
+            </Link>
+          </SignedIn>
+          <SignedOut>
+            <SignInButton mode="modal" forceRedirectUrl="/dashboard">
+              <button className="text-sm font-bold tracking-widest text-gray-300 hover:text-white transition-colors cursor-pointer">
+                {t('lpLogin')}
+              </button>
+            </SignInButton>
+          </SignedOut>
+          <select 
+            value={language} 
+            onChange={(e) => setLanguage(e.target.value)}
+            className="bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 rounded-md px-2 py-1 text-xs outline-none focus:border-blue-500 font-sans tracking-widest uppercase cursor-pointer"
+          >
+            <option value="EN" className="bg-slate-900">EN</option>
+            <option value="AR" className="bg-slate-900">AR</option>
+            <option value="BN" className="bg-slate-900">BN</option>
+            <option value="DE" className="bg-slate-900">DE</option>
+            <option value="ES" className="bg-slate-900">ES</option>
+            <option value="FR" className="bg-slate-900">FR</option>
+            <option value="HI" className="bg-slate-900">HI</option>
+            <option value="ID" className="bg-slate-900">ID</option>
+            <option value="JP" className="bg-slate-900">JP</option>
+            <option value="KO" className="bg-slate-900">KO</option>
+            <option value="PT" className="bg-slate-900">PT</option>
+            <option value="RU" className="bg-slate-900">RU</option>
+            <option value="TH" className="bg-slate-900">TH</option>
+            <option value="TL" className="bg-slate-900">TL</option>
+            <option value="TR" className="bg-slate-900">TR</option>
+            <option value="UK" className="bg-slate-900">UK</option>
+            <option value="UR" className="bg-slate-900">UR</option>
+            <option value="VI" className="bg-slate-900">VI</option>
+            <option value="ZH" className="bg-slate-900">ZH</option>
+          </select>
+        </div>
       </nav>
 
       {/* Hero Section */}
@@ -49,12 +78,12 @@ const LandingPage = () => {
           </div>
           
           <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-8 drop-shadow-2xl text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400">
-            Retail sees price.<br/>
-            <span className="text-white">Institutions see the radar.</span>
+            {t('lpHeroTitle1')}<br/>
+            <span className="text-white">{t('lpHeroTitle2')}</span>
           </h1>
           
           <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-12 leading-relaxed">
-            Institutional-grade risk synthesis for retail crypto traders. Track live algorithmic Kill Zones and ETF divergence. <strong className="text-gray-200">Stop being exit liquidity.</strong>
+            {t('lpHeroDesc')} <strong className="text-gray-200">{t('lpHeroBold')}</strong>
           </p>
 
           <SignedIn>
@@ -62,7 +91,7 @@ const LandingPage = () => {
               <button className="group relative px-8 py-4 bg-white text-slate-950 font-bold text-lg md:text-xl rounded-full overflow-hidden transition-transform hover:scale-105 active:scale-95 shadow-[0_0_40px_rgba(255,255,255,0.2)]">
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-100 to-purple-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <span className="relative z-10 flex items-center gap-2">
-                  Enter Dashboard
+                  {t('lpEnterDashboard')}
                 </span>
               </button>
             </Link>
@@ -72,7 +101,7 @@ const LandingPage = () => {
               <button className="group relative px-8 py-4 bg-white text-slate-950 font-bold text-lg md:text-xl rounded-full overflow-hidden transition-transform hover:scale-105 active:scale-95 shadow-[0_0_40px_rgba(255,255,255,0.2)]">
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-100 to-purple-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <span className="relative z-10 flex items-center gap-2">
-                  Start 7-Day Free Trial
+                  {t('lpStartTrial')}
                 </span>
               </button>
             </SignUpButton>
@@ -97,9 +126,9 @@ const LandingPage = () => {
             <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center mb-6 text-blue-400">
               <Activity size={24} />
             </div>
-            <h3 className="text-xl font-bold text-white mb-3">The Divergence Matrix</h3>
+            <h3 className="text-xl font-bold text-white mb-3">{t('lpFeature1Title')}</h3>
             <p className="text-gray-400 leading-relaxed text-sm">
-              Tracks real-time Spot ETF inflows against retail broker health. ARES alerts you when Smart Money is distributing to euphoric retail traders.
+              {t('lpFeature1Desc')}
             </p>
           </div>
 
@@ -108,9 +137,9 @@ const LandingPage = () => {
             <div className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center mb-6 text-purple-400">
               <Target size={24} />
             </div>
-            <h3 className="text-xl font-bold text-white mb-3">Algorithmic Kill Zones</h3>
+            <h3 className="text-xl font-bold text-white mb-3">{t('lpFeature2Title')}</h3>
             <p className="text-gray-400 leading-relaxed text-sm">
-              Maps massive liquidity clusters where over-leveraged traders get hunted. Catch flash crashes with precision Limit Buy orders.
+              {t('lpFeature2Desc')}
             </p>
           </div>
 
@@ -119,9 +148,9 @@ const LandingPage = () => {
             <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center mb-6 text-red-400">
               <ShieldAlert size={24} />
             </div>
-            <h3 className="text-xl font-bold text-white mb-3">Custom Altcoin Radar</h3>
+            <h3 className="text-xl font-bold text-white mb-3">{t('lpFeature3Title')}</h3>
             <p className="text-gray-400 leading-relaxed text-sm">
-              Deploy the ARES scraper to sweep Tier-1 and Tier-2 altcoins. Receive instant threat levels and liquidation heatmaps for assets you track.
+              {t('lpFeature3Desc')}
             </p>
           </div>
 

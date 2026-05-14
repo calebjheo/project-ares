@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ClerkProvider, SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react';
+import { LanguageProvider } from './contexts/LanguageContext';
 import LandingPage from './components/LandingPage';
 import Dashboard from './components/Dashboard';
 
@@ -22,8 +23,9 @@ function App() {
 
   return (
     <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
-      <Router>
-        <Routes>
+      <LanguageProvider>
+        <Router>
+          <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route 
             path="/dashboard" 
@@ -38,8 +40,9 @@ function App() {
               </>
             } 
           />
-        </Routes>
-      </Router>
+          </Routes>
+        </Router>
+      </LanguageProvider>
     </ClerkProvider>
   );
 }
