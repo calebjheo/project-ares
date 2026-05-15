@@ -9,6 +9,29 @@ const { clerkClient } = require('@clerk/clerk-sdk-node');
 const jwt = require('jsonwebtoken');
 const { HttpsProxyAgent } = require('https-proxy-agent');
 const WebSocket = require('ws');
+const { Resend } = require('resend');
+
+// Initialize Resend
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+// Send Email Alert on Auth Failure
+async function sendAuthFailureAlert(ticker) {
+    if (!process.env.RESEND_API_KEY) return;
+    try {
+        await resend.emails.send({
+            from: 'onboarding@resend.dev',
+            to: 'caleb.jheo@gmail.com',
+            subject: '🚨 CRITICAL: ARES Scraper Auth Failure.',
+            html: `<p>The CoinGlass <strong>obe</strong> session cookie has expired or returned a 401/403 error while scraping <strong>${ticker}</strong>.</p>
+                   <p>Please log in to CoinGlass, grab the new cookie, and update the <code>COINGLASS_SESSION_COOKIE</code> environment variable in your Render dashboard.</p>
+                   <p>Timestamp: ${new Date().toISOString()}</p>`
+        });
+        console.log(`[+] Alert email sent successfully to caleb.jheo@gmail.com`);
+    } catch (err) {
+        console.error(`[-] Failed to send alert email:`, err);
+    }
+}
+
 // Function to fetch BTC Price and Fear & Greed Index
 async function fetchCryptoData() {
     try {
@@ -168,7 +191,8 @@ async function takeCoinglassScreenshot(ticker) {
              details += " | ScrapingBee Data: " + Buffer.from(error.response.data).toString('utf-8');
         }
         
-        if (details.includes('AUTH_FAILED')) {
+        if (details.includes('AUTH_FAILED') || details.includes('401') || details.includes('403') || details.includes('login')) {
+            sendAuthFailureAlert(ticker);
             return `AUTH_FAILED: CoinGlass cookie expired. Please update Render environment variables.`;
         }
         
