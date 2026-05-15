@@ -11,12 +11,15 @@ const { HttpsProxyAgent } = require('https-proxy-agent');
 const WebSocket = require('ws');
 const { Resend } = require('resend');
 
-// Initialize Resend
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Initialize Resend safely
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 // Send Email Alert on Auth Failure
 async function sendAuthFailureAlert(ticker) {
-    if (!process.env.RESEND_API_KEY) return;
+    if (!resend) {
+        console.warn('[-] RESEND_API_KEY not found. Skipping email alert.');
+        return;
+    }
     try {
         await resend.emails.send({
             from: 'onboarding@resend.dev',
