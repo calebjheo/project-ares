@@ -113,6 +113,23 @@ const LandingPage = () => {
               </button>
             </SignUpButton>
           </SignedOut>
+          
+          <div className="mt-8 flex justify-center animate-[fadeIn_0.5s_ease-out_0.5s_both]">
+            <a 
+              href="https://www.producthunt.com/products/project-ares?utm_source=other&utm_medium=social" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="group relative inline-flex items-center gap-3 bg-[#1A1A1A] border border-white/10 rounded-xl px-4 py-2 shadow-[0_4px_20px_rgba(0,0,0,0.5)] hover:border-[#FF6154]/50 transition-colors"
+            >
+              <div className="w-8 h-8 rounded-full bg-[#FF6154] flex items-center justify-center flex-shrink-0 font-bold text-white text-lg leading-none shadow-[0_0_15px_rgba(255,97,84,0.4)] group-hover:scale-110 transition-transform">
+                P
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="text-[9px] font-bold text-gray-400 tracking-widest uppercase mb-0.5">Featured On</span>
+                <span className="text-sm font-extrabold text-white leading-none tracking-tight">Product Hunt</span>
+              </div>
+            </a>
+          </div>
         </div>
 
         {/* Dashboard Placeholder */}
