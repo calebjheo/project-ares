@@ -215,31 +215,32 @@ async function sendToGemini(payload, lang = 'EN') {
 
     const hasFailedScrape = 
         payload.etfFlow.rawText.includes('PROXY ERROR') || 
+        payload.etfFlow.rawText.includes('AUTH_FAILED') ||
         payload.etfFlow.rawText.includes('Cloudflare') ||
         payload.etfFlow.rawText.includes('security') ||
         payload.etfFlow.rawText.includes('Just a moment') ||
-        (payload.btcScreenshot && payload.btcScreenshot.includes('PROXY ERROR')) ||
-        (payload.ethScreenshot && payload.ethScreenshot.includes('PROXY ERROR')) ||
-        (payload.solScreenshot && payload.solScreenshot.includes('PROXY ERROR'));
+        (payload.btcScreenshot && (payload.btcScreenshot.includes('PROXY ERROR') || payload.btcScreenshot.includes('AUTH_FAILED'))) ||
+        (payload.ethScreenshot && (payload.ethScreenshot.includes('PROXY ERROR') || payload.ethScreenshot.includes('AUTH_FAILED'))) ||
+        (payload.solScreenshot && (payload.solScreenshot.includes('PROXY ERROR') || payload.solScreenshot.includes('AUTH_FAILED')));
 
     let failureContext = '';
     let btcPrompt = `"BTC_Kill_Zone": "$74,800"`;
     let ethPrompt = `"ETH_Kill_Zone": "$3,850"`;
     let solPrompt = `"SOL_Kill_Zone": "$185"`;
 
-    if (payload.btcScreenshot && payload.btcScreenshot.includes('PROXY ERROR')) {
+    if (payload.btcScreenshot && (payload.btcScreenshot.includes('PROXY ERROR') || payload.btcScreenshot.includes('AUTH_FAILED'))) {
         btcPrompt = `"BTC_Kill_Zone": "RADAR JAMMED"`;
         failureContext += `BTC Scraper Error: ${payload.btcScreenshot}. `;
     }
-    if (payload.ethScreenshot && (payload.ethScreenshot.includes('PROXY ERROR') || payload.ethScreenshot.includes('PAYWALLED'))) {
+    if (payload.ethScreenshot && (payload.ethScreenshot.includes('PROXY ERROR') || payload.ethScreenshot.includes('PAYWALLED') || payload.ethScreenshot.includes('AUTH_FAILED'))) {
         ethPrompt = `"ETH_Kill_Zone": "PAYWALLED"`;
-        if (payload.ethScreenshot.includes('PROXY ERROR')) failureContext += `ETH Scraper Error: ${payload.ethScreenshot}. `;
+        if (payload.ethScreenshot.includes('PROXY ERROR') || payload.ethScreenshot.includes('AUTH_FAILED')) failureContext += `ETH Scraper Error: ${payload.ethScreenshot}. `;
     }
-    if (payload.solScreenshot && (payload.solScreenshot.includes('PROXY ERROR') || payload.solScreenshot.includes('PAYWALLED'))) {
+    if (payload.solScreenshot && (payload.solScreenshot.includes('PROXY ERROR') || payload.solScreenshot.includes('PAYWALLED') || payload.solScreenshot.includes('AUTH_FAILED'))) {
         solPrompt = `"SOL_Kill_Zone": "PAYWALLED"`;
-        if (payload.solScreenshot.includes('PROXY ERROR')) failureContext += `SOL Scraper Error: ${payload.solScreenshot}. `;
+        if (payload.solScreenshot.includes('PROXY ERROR') || payload.solScreenshot.includes('AUTH_FAILED')) failureContext += `SOL Scraper Error: ${payload.solScreenshot}. `;
     }
-    if (payload.etfFlow.rawText.includes('PROXY ERROR') || payload.etfFlow.rawText.includes('Cloudflare')) {
+    if (payload.etfFlow.rawText.includes('PROXY ERROR') || payload.etfFlow.rawText.includes('AUTH_FAILED') || payload.etfFlow.rawText.includes('Cloudflare')) {
         failureContext += `ETF Scraper Error: ${payload.etfFlow.rawText}. `;
     }
 
