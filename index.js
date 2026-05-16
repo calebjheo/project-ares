@@ -771,6 +771,23 @@ app.get('/api/debug-cache', (req, res) => {
     res.json(sharedPayloadCache);
 });
 
+app.get('/api/test-email', async (req, res) => {
+    if (!resend) {
+        return res.status(500).json({ error: 'RESEND_API_KEY not found or Resend not initialized.' });
+    }
+    try {
+        const data = await resend.emails.send({
+            from: 'onboarding@resend.dev',
+            to: 'caleb.jheo@gmail.com',
+            subject: '🚨 TEST: Project ARES Email Dispatch',
+            html: '<p>This is a manual test to verify that the Resend API is securely connected to the Project ARES backend.</p>'
+        });
+        res.json({ success: true, data });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message, details: err });
+    }
+});
+
 app.get('/api/test-scrape', async (req, res) => {
     try {
         const testUrl = req.query.url || 'https://coinank.com/liquidation-heatmap';
