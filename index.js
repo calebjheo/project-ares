@@ -772,6 +772,15 @@ app.get('/api/debug-cache', (req, res) => {
     res.json(sharedPayloadCache);
 });
 
+app.get('/api/force-sweep', async (req, res) => {
+    if (isSweeping) {
+        return res.status(429).json({ error: 'Sweep already in progress. Please wait.' });
+    }
+    // Fire and forget
+    runBackgroundSweep().catch(console.error);
+    res.json({ success: true, message: 'Background sweep forcefully initiated. Results will be available in ~60 seconds.' });
+});
+
 app.get('/api/test-email', async (req, res) => {
     if (!resend) {
         return res.status(500).json({ error: 'RESEND_API_KEY not found or Resend not initialized.' });
