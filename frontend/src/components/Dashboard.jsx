@@ -280,7 +280,7 @@ const DashboardContent = () => {
 
       try {
         const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
-        const response = await fetch(`${baseUrl}/api/risk?lang=${language}`, {
+        const response = await fetch(`${baseUrl}/api/risk?lang=${language}&_t=${Date.now()}`, {
           signal: controller.signal
         });
         clearTimeout(timeoutId);

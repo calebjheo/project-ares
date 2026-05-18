@@ -533,6 +533,7 @@ runBackgroundSweep();
 setInterval(runBackgroundSweep, 60 * 60 * 1000);
 
 app.get('/api/risk', riskLimiter, async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     const lang = req.query.lang || 'EN';
     
     const now = Date.now();
