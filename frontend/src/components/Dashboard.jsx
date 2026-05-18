@@ -31,7 +31,7 @@ const AltcoinSlot = ({ id, isProUser }) => {
     
     try {
       const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
-      const response = await fetch(`${baseUrl}/api/altcoin?ticker=${cleanTicker}`);
+      const response = await fetch(`${baseUrl}/api/altcoin?ticker=${cleanTicker}&_t=${Date.now()}`);
       if (!response.ok) throw new Error('Fetch failed');
       const json = await response.json();
       setTargetData({

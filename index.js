@@ -733,6 +733,7 @@ async function runAltcoinSweep() {
 setInterval(runAltcoinSweep, 20 * 60 * 1000);
 
 app.get('/api/altcoin', async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     const ticker = req.query.ticker?.toUpperCase();
     if (!ticker) {
         return res.status(400).json({ error: 'Ticker is required' });
