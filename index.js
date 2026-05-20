@@ -557,6 +557,20 @@ app.get('/api/risk', riskLimiter, async (req, res) => {
                 responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
                 const parsed = JSON.parse(responseText);
                 
+                const btcJammed = !sharedPayloadCache.payload.btcScreenshot || 
+                                  sharedPayloadCache.payload.btcScreenshot.includes('PROXY ERROR') || 
+                                  sharedPayloadCache.payload.btcScreenshot.includes('AUTH_FAILED');
+                
+                const ethJammed = !sharedPayloadCache.payload.ethScreenshot || 
+                                  sharedPayloadCache.payload.ethScreenshot.includes('PROXY ERROR') || 
+                                  sharedPayloadCache.payload.ethScreenshot.includes('AUTH_FAILED') ||
+                                  sharedPayloadCache.payload.ethScreenshot.includes('PAYWALLED');
+                
+                const solJammed = !sharedPayloadCache.payload.solScreenshot || 
+                                  sharedPayloadCache.payload.solScreenshot.includes('PROXY ERROR') || 
+                                  sharedPayloadCache.payload.solScreenshot.includes('AUTH_FAILED') ||
+                                  sharedPayloadCache.payload.solScreenshot.includes('PAYWALLED');
+                
                 finalJson = {
                     "Market_Posture": parsed.Market_Posture || "UNKNOWN",
                     "Fear_Greed_Score": parsed.Fear_Greed_Score || sharedPayloadCache.payload.cryptoData.fearAndGreed.value || "50",
@@ -564,9 +578,9 @@ app.get('/api/risk', riskLimiter, async (req, res) => {
                     "Net_ETF_Flow": parsed.Net_ETF_Flow || "RADAR JAMMED",
                     "Divergence_Matrix": parsed.Divergence_Matrix || "NEUTRAL: Macro Indecision. Trade Level to Level.",
                     "Actionable_Intel": parsed.Actionable_Intel || "Awaiting intelligence...",
-                    "BTC_Kill_Zone": parsed.BTC_Kill_Zone || "RADAR JAMMED",
-                    "ETH_Kill_Zone": parsed.ETH_Kill_Zone || "RADAR JAMMED",
-                    "SOL_Kill_Zone": parsed.SOL_Kill_Zone || "RADAR JAMMED"
+                    "BTC_Kill_Zone": btcJammed ? "RADAR JAMMED" : (parsed.BTC_Kill_Zone || "RADAR JAMMED"),
+                    "ETH_Kill_Zone": ethJammed ? "RADAR JAMMED" : (parsed.ETH_Kill_Zone || "RADAR JAMMED"),
+                    "SOL_Kill_Zone": solJammed ? "RADAR JAMMED" : (parsed.SOL_Kill_Zone || "RADAR JAMMED")
                 };
             } catch(e) {
                 finalJson = {
@@ -576,9 +590,9 @@ app.get('/api/risk', riskLimiter, async (req, res) => {
                     "Net_ETF_Flow": "RADAR JAMMED",
                     "Divergence_Matrix": "NEUTRAL: Macro Indecision. Trade Level to Level.",
                     "Actionable_Intel": "RADAR JAMMED - AI Synthesis Engine Failed to parse data.",
-                    "BTC_Kill_Zone": "RADAR JAMMED - RETRYING",
-                    "ETH_Kill_Zone": "RADAR JAMMED - RETRYING",
-                    "SOL_Kill_Zone": "RADAR JAMMED - RETRYING"
+                    "BTC_Kill_Zone": "RADAR JAMMED",
+                    "ETH_Kill_Zone": "RADAR JAMMED",
+                    "SOL_Kill_Zone": "RADAR JAMMED"
                 };
             }
             
