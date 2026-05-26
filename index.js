@@ -468,7 +468,128 @@ app.get('/api/verify-session', async (req, res) => {
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 let sharedPayloadCache = { payload: null, timestamp: 0 };
 let finalResponseCache = {};
+let lastCalculatedRiskEN = null;
 let isSweeping = false;
+
+// Helper to parse and sanitize Gemini output
+function parseAndSanitizeRiskResponse(geminiResult, payload) {
+    try {
+        let responseText = geminiResult.candidates[0].content.parts[0].text;
+        responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+        const parsed = JSON.parse(responseText);
+        
+        const btcJammed = !payload.btcScreenshot || 
+                          payload.btcScreenshot.includes('PROXY ERROR') || 
+                          payload.btcScreenshot.includes('AUTH_FAILED');
+        
+        const ethJammed = !payload.ethScreenshot || 
+                          payload.ethScreenshot.includes('PROXY ERROR') || 
+                          payload.ethScreenshot.includes('AUTH_FAILED') ||
+                          payload.ethScreenshot.includes('PAYWALLED');
+        
+        const solJammed = !payload.solScreenshot || 
+                          payload.solScreenshot.includes('PROXY ERROR') || 
+                          payload.solScreenshot.includes('AUTH_FAILED') ||
+                          payload.solScreenshot.includes('PAYWALLED');
+        
+        return {
+            "Market_Posture": parsed.Market_Posture || "UNKNOWN",
+            "Fear_Greed_Score": parsed.Fear_Greed_Score || payload.cryptoData.fearAndGreed.value || "50",
+            "Corporate_Sentiment": parsed.Corporate_Sentiment || "RADAR JAMMED - UNABLE TO ACQUIRE CORPORATE DATA",
+            "Net_ETF_Flow": parsed.Net_ETF_Flow || "RADAR JAMMED",
+            "Divergence_Matrix": parsed.Divergence_Matrix || "NEUTRAL: Macro Indecision. Trade Level to Level.",
+            "Actionable_Intel": parsed.Actionable_Intel || "Awaiting intelligence...",
+            "BTC_Kill_Zone": btcJammed ? "RADAR JAMMED" : (parsed.BTC_Kill_Zone || "RADAR JAMMED"),
+            "ETH_Kill_Zone": ethJammed ? "RADAR JAMMED" : (parsed.ETH_Kill_Zone || "RADAR JAMMED"),
+            "SOL_Kill_Zone": solJammed ? "RADAR JAMMED" : (parsed.SOL_Kill_Zone || "RADAR JAMMED")
+        };
+    } catch(e) {
+        console.error("[-] Failed to parse Gemini response:", e);
+        return {
+            "Market_Posture": "UNKNOWN",
+            "Fear_Greed_Score": payload.cryptoData.fearAndGreed.value || "50",
+            "Corporate_Sentiment": "RADAR JAMMED",
+            "Net_ETF_Flow": "RADAR JAMMED",
+            "Divergence_Matrix": "NEUTRAL: Macro Indecision. Trade Level to Level.",
+            "Actionable_Intel": "RADAR JAMMED - AI Synthesis Engine Failed to parse data.",
+            "BTC_Kill_Zone": "RADAR JAMMED",
+            "ETH_Kill_Zone": "RADAR JAMMED",
+            "SOL_Kill_Zone": "RADAR JAMMED"
+        };
+    }
+}
+
+// Text-only Gemini translation helper
+async function translateRiskResponse(englishData, lang) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+        throw new Error('GEMINI_API_KEY is not set');
+    }
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+
+    const requestBody = {
+        contents: [
+            {
+                role: 'user',
+                parts: [
+                    {
+                        text: `You are a machine translation API. Translate the natural language fields in the following JSON object into the language code "${lang}". 
+
+Fields to translate:
+- "Corporate_Sentiment" (translate into ${lang})
+- "Actionable_Intel" (translate into ${lang})
+- "Divergence_Matrix" (translate into ${lang})
+
+CRITICAL DIRECTIVES:
+1. Keep the JSON keys exactly the same.
+2. Keep the following fields exactly the same (DO NOT change or translate them at all):
+   - "Market_Posture" (must remain in English, e.g. "DEFENSIVE", "AGGRESSIVE")
+   - "Fear_Greed_Score" (keep as is)
+   - "Net_ETF_Flow" (keep as is, e.g. "+$285M" or "RADAR JAMMED")
+   - "BTC_Kill_Zone" (keep the price/text exactly as is, e.g., "$70,500" or "RADAR JAMMED")
+   - "ETH_Kill_Zone" (keep the price/text exactly as is, e.g., "$3,850" or "RADAR JAMMED")
+   - "SOL_Kill_Zone" (keep the price/text exactly as is, e.g., "$185" or "RADAR JAMMED")
+3. Output ONLY valid JSON. No explanations, no markdown formatting.
+
+JSON to translate:
+${JSON.stringify(englishData, null, 2)}`
+                    }
+                ]
+            }
+        ],
+        generationConfig: {
+            temperature: 0.1,
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: "OBJECT",
+                properties: {
+                    Market_Posture: { type: "STRING" },
+                    Fear_Greed_Score: { type: "STRING" },
+                    Corporate_Sentiment: { type: "STRING" },
+                    Net_ETF_Flow: { type: "STRING" },
+                    Divergence_Matrix: { type: "STRING" },
+                    Actionable_Intel: { type: "STRING" },
+                    BTC_Kill_Zone: { type: "STRING" },
+                    ETH_Kill_Zone: { type: "STRING" },
+                    SOL_Kill_Zone: { type: "STRING" }
+                },
+                required: [
+                    "Market_Posture", "Fear_Greed_Score", "Corporate_Sentiment", 
+                    "Net_ETF_Flow", "Divergence_Matrix", "Actionable_Intel", 
+                    "BTC_Kill_Zone", "ETH_Kill_Zone", "SOL_Kill_Zone"
+                ]
+            }
+        }
+    };
+
+    const response = await axios.post(apiUrl, requestBody, {
+        headers: { 'Content-Type': 'application/json' }
+    });
+
+    let responseText = response.data.candidates[0].content.parts[0].text;
+    responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+    return JSON.parse(responseText);
+}
 
 // Background Cron Engine
 async function runBackgroundSweep() {
@@ -519,7 +640,19 @@ async function runBackgroundSweep() {
         };
         
         sharedPayloadCache = { payload, timestamp: Date.now() };
-        finalResponseCache = {}; // Clear translation cache to trigger a fresh Gemini inference
+        finalResponseCache = {}; // Clear translation cache
+
+        // Run Gemini analysis instantly in English to lock values
+        try {
+            console.log('[+] Running background Gemini risk assessment (multimodal)...');
+            const result = await sendToGemini(payload, 'EN');
+            lastCalculatedRiskEN = parseAndSanitizeRiskResponse(result, payload);
+            console.log('[+] Background Gemini analysis completed successfully.');
+        } catch (geminiErr) {
+            console.error('[-] Gemini background analysis failed:', geminiErr);
+            // Don't crash the sweep, but log the failure
+        }
+        
         console.log('[+] Background sweep completed and cached.');
     } catch (e) {
         console.error('[-] Error in background sweep:', e);
@@ -547,53 +680,24 @@ app.get('/api/risk', riskLimiter, async (req, res) => {
     // If we have a payload but no translation yet, generate translation instantly
     if (sharedPayloadCache.payload) {
         try {
-            console.log(`[+] Translating payload instantly for ${lang}`);
-            const cachedResult = await sendToGemini(sharedPayloadCache.payload, lang);
+            // First, make sure we have the base English risk assessment
+            if (!lastCalculatedRiskEN) {
+                console.log('[+] lastCalculatedRiskEN is null. Running dynamic English assessment...');
+                const result = await sendToGemini(sharedPayloadCache.payload, 'EN');
+                lastCalculatedRiskEN = parseAndSanitizeRiskResponse(result, sharedPayloadCache.payload);
+            }
             
-            // Validate JSON
             let finalJson;
-            try {
-                let responseText = cachedResult.candidates[0].content.parts[0].text;
-                responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-                const parsed = JSON.parse(responseText);
-                
-                const btcJammed = !sharedPayloadCache.payload.btcScreenshot || 
-                                  sharedPayloadCache.payload.btcScreenshot.includes('PROXY ERROR') || 
-                                  sharedPayloadCache.payload.btcScreenshot.includes('AUTH_FAILED');
-                
-                const ethJammed = !sharedPayloadCache.payload.ethScreenshot || 
-                                  sharedPayloadCache.payload.ethScreenshot.includes('PROXY ERROR') || 
-                                  sharedPayloadCache.payload.ethScreenshot.includes('AUTH_FAILED') ||
-                                  sharedPayloadCache.payload.ethScreenshot.includes('PAYWALLED');
-                
-                const solJammed = !sharedPayloadCache.payload.solScreenshot || 
-                                  sharedPayloadCache.payload.solScreenshot.includes('PROXY ERROR') || 
-                                  sharedPayloadCache.payload.solScreenshot.includes('AUTH_FAILED') ||
-                                  sharedPayloadCache.payload.solScreenshot.includes('PAYWALLED');
-                
-                finalJson = {
-                    "Market_Posture": parsed.Market_Posture || "UNKNOWN",
-                    "Fear_Greed_Score": parsed.Fear_Greed_Score || sharedPayloadCache.payload.cryptoData.fearAndGreed.value || "50",
-                    "Corporate_Sentiment": parsed.Corporate_Sentiment || "RADAR JAMMED - UNABLE TO ACQUIRE CORPORATE DATA",
-                    "Net_ETF_Flow": parsed.Net_ETF_Flow || "RADAR JAMMED",
-                    "Divergence_Matrix": parsed.Divergence_Matrix || "NEUTRAL: Macro Indecision. Trade Level to Level.",
-                    "Actionable_Intel": parsed.Actionable_Intel || "Awaiting intelligence...",
-                    "BTC_Kill_Zone": btcJammed ? "RADAR JAMMED" : (parsed.BTC_Kill_Zone || "RADAR JAMMED"),
-                    "ETH_Kill_Zone": ethJammed ? "RADAR JAMMED" : (parsed.ETH_Kill_Zone || "RADAR JAMMED"),
-                    "SOL_Kill_Zone": solJammed ? "RADAR JAMMED" : (parsed.SOL_Kill_Zone || "RADAR JAMMED")
-                };
-            } catch(e) {
-                finalJson = {
-                    "Market_Posture": "UNKNOWN",
-                    "Fear_Greed_Score": sharedPayloadCache.payload.cryptoData.fearAndGreed.value || "50",
-                    "Corporate_Sentiment": "RADAR JAMMED",
-                    "Net_ETF_Flow": "RADAR JAMMED",
-                    "Divergence_Matrix": "NEUTRAL: Macro Indecision. Trade Level to Level.",
-                    "Actionable_Intel": "RADAR JAMMED - AI Synthesis Engine Failed to parse data.",
-                    "BTC_Kill_Zone": "RADAR JAMMED",
-                    "ETH_Kill_Zone": "RADAR JAMMED",
-                    "SOL_Kill_Zone": "RADAR JAMMED"
-                };
+            if (lang === 'EN') {
+                finalJson = lastCalculatedRiskEN;
+            } else {
+                console.log(`[+] Translating payload instantly for ${lang}`);
+                try {
+                    finalJson = await translateRiskResponse(lastCalculatedRiskEN, lang);
+                } catch (translateErr) {
+                    console.error(`[-] Translation to ${lang} failed, falling back to English:`, translateErr);
+                    finalJson = lastCalculatedRiskEN;
+                }
             }
             
             finalResponseCache[lang] = {
@@ -614,9 +718,9 @@ app.get('/api/risk', riskLimiter, async (req, res) => {
             "Corporate_Sentiment": "SYSTEM BOOTING",
             "Net_ETF_Flow": "SYSTEM BOOTING",
             "Actionable_Intel": "The Project ARES tactical servers are currently booting up and acquiring initial radar sweeps. Please hold the line and refresh in 60 seconds.",
-            "BTC_Kill_Zone": "ACQUIRING...",
-            "ETH_Kill_Zone": "ACQUIRING...",
-            "SOL_Kill_Zone": "ACQUIRING..."
+            "BTC_Kill_Zone": "INITIALIZING...",
+            "ETH_Kill_Zone": "INITIALIZING...",
+            "SOL_Kill_Zone": "INITIALIZING..."
         });
     }
 });
