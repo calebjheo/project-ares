@@ -204,6 +204,56 @@ async function takeCoinglassScreenshot(ticker) {
     }
 }
 
+// Function to screenshot Coinank Liquidation Heatmap using ScrapingBee API
+async function takeCoinankScreenshot(ticker) {
+    if (!process.env.PROXY_API_KEY && process.env.NODE_ENV === 'production') {
+        return `PROXY ERROR: PROXY_API_KEY is not defined. Cannot capture heatmap.`;
+    }
+
+    console.log(`[+] Taking Coinank screenshot for ${ticker} via ScrapingBee API...`);
+    try {
+        const params = {
+            api_key: process.env.PROXY_API_KEY,
+            url: `https://coinank.com/chart/derivatives/liq-heat-map/${ticker}USDT/1w`,
+            render_js: 'true',
+            stealth_proxy: 'true',
+            premium_proxy: 'true',
+            screenshot: 'true',
+            window_width: '1920',
+            window_height: '1080',
+            wait: '15000'
+        };
+
+        const response = await axios.get('https://app.scrapingbee.com/api/v1/', { 
+            params,
+            responseType: 'arraybuffer',
+            timeout: 120000 
+        });
+        
+        const base64Screenshot = Buffer.from(response.data, 'binary').toString('base64');
+        return base64Screenshot;
+    } catch (error) {
+        let details = error.message;
+        if (error.response && error.response.data) {
+             details += " | ScrapingBee Data: " + Buffer.from(error.response.data).toString('utf-8');
+        }
+        
+        console.error(`[-] Error scraping Coinank for ${ticker}:`, details);
+        return `PROXY ERROR: Coinank Scraper (${ticker}) failed: ${details}`;
+    }
+}
+
+// Combined wrapper with fallback
+async function getHeatmapScreenshot(ticker) {
+    const coinglassRes = await takeCoinglassScreenshot(ticker);
+    if (coinglassRes && !coinglassRes.includes('PROXY ERROR') && !coinglassRes.includes('AUTH_FAILED')) {
+        return coinglassRes;
+    }
+    console.log(`[-] CoinGlass screenshot failed or auth expired for ${ticker}. Falling back to Coinank...`);
+    return await takeCoinankScreenshot(ticker);
+}
+
+
 // Function to send data to Gemini 1.5-flash API
 async function sendToGemini(payload, lang = 'EN') {
     const apiKey = process.env.GEMINI_API_KEY;
@@ -602,24 +652,24 @@ async function runBackgroundSweep() {
         let cryptoData = await fetchCryptoData();
         let etfFlow = await scrapeFarsideETF();
         
-        let btcScreenshot = await takeCoinglassScreenshot('BTC');
-        if (btcScreenshot.includes('PROXY ERROR') && sharedPayloadCache.payload?.btcScreenshot) {
+        let btcScreenshot = await getHeatmapScreenshot('BTC');
+        if ((btcScreenshot.includes('PROXY ERROR') || btcScreenshot.includes('AUTH_FAILED')) && sharedPayloadCache.payload?.btcScreenshot) {
             console.log('[-] BTC scraper failed. Retaining last known good cache.');
             btcScreenshot = sharedPayloadCache.payload.btcScreenshot;
         }
         
         await new Promise(r => setTimeout(r, 15000)); // Delay to prevent burst rate limit
         
-        let ethScreenshot = await takeCoinglassScreenshot('ETH');
-        if (ethScreenshot.includes('PROXY ERROR') && sharedPayloadCache.payload?.ethScreenshot) {
+        let ethScreenshot = await getHeatmapScreenshot('ETH');
+        if ((ethScreenshot.includes('PROXY ERROR') || ethScreenshot.includes('AUTH_FAILED')) && sharedPayloadCache.payload?.ethScreenshot) {
             console.log('[-] ETH scraper failed. Retaining last known good cache.');
             ethScreenshot = sharedPayloadCache.payload.ethScreenshot;
         }
         
         await new Promise(r => setTimeout(r, 15000)); // Delay to prevent burst rate limit
         
-        let solScreenshot = await takeCoinglassScreenshot('SOL');
-        if (solScreenshot.includes('PROXY ERROR') && sharedPayloadCache.payload?.solScreenshot) {
+        let solScreenshot = await getHeatmapScreenshot('SOL');
+        if ((solScreenshot.includes('PROXY ERROR') || solScreenshot.includes('AUTH_FAILED')) && sharedPayloadCache.payload?.solScreenshot) {
             console.log('[-] SOL scraper failed. Retaining last known good cache.');
             solScreenshot = sharedPayloadCache.payload.solScreenshot;
         }
@@ -810,7 +860,7 @@ let isAltcoinSweeping = false;
 
 async function performAltcoinScrape(ticker) {
     try {
-        const screenshot = await takeCoinglassScreenshot(ticker);
+        const screenshot = await getHeatmapScreenshot(ticker);
         if (screenshot && !screenshot.includes('PROXY ERROR') && !screenshot.includes('AUTH_FAILED')) {
             const jsonResult = await analyzeAltcoinHeatmap(ticker, screenshot);
             if (jsonResult) {
@@ -958,6 +1008,8 @@ module.exports = {
     fetchCorporateData,
     scrapeFarsideETF,
     takeCoinglassScreenshot,
+    takeCoinankScreenshot,
+    getHeatmapScreenshot,
     sendToGemini,
     app
 };
