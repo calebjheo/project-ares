@@ -148,9 +148,10 @@ async function takeCoinglassScreenshot(ticker) {
     try {
         const jsScenario = {
             instructions: [
-                { "evaluate": "if(window.location.href.includes('login') || document.body.innerText.includes('Sign in')) throw new Error('AUTH_FAILED');" },
                 { "evaluate": "const style = document.createElement('style'); style.innerHTML = '* { filter: none !important; backdrop-filter: none !important; } div[role=\"dialog\"], .MuiDialog-root, .MuiModal-root { display: none !important; opacity: 0 !important; visibility: hidden !important; }'; document.head.appendChild(style);" },
-                { "wait": 15000 }
+                { "wait": 15000 },
+                { "evaluate": "if(window.location.href.includes('login') || document.body.innerText.includes('Sign in')) throw new Error('AUTH_FAILED');" },
+                { "evaluate": "if(!document.body.innerText.includes('Liquidation') || document.body.innerText.includes('Just a moment') || document.body.innerText.includes('Cloudflare')) throw new Error('CHART_NOT_FOUND');" }
             ]
         };
         
@@ -216,7 +217,8 @@ async function takeCoinankScreenshot(ticker) {
             instructions: [
                 { "evaluate": "const style = document.createElement('style'); style.innerHTML = '* { filter: none !important; backdrop-filter: none !important; } .ant-modal-root, .ant-modal-mask, .ant-modal-wrap, div[class*=\"modal\"], div[class*=\"dialog\"], div[class*=\"overlay\"] { display: none !important; opacity: 0 !important; visibility: hidden !important; }'; document.head.appendChild(style);" },
                 { "evaluate": "const els = document.querySelectorAll('div, p, span, button'); for (const el of els) { if (el.innerText && (el.innerText.includes('Please log in') || el.innerText.includes('use chart features'))) { el.style.setProperty('display', 'none', 'important'); if (el.parentElement) { el.parentElement.style.setProperty('display', 'none', 'important'); if (el.parentElement.parentElement) el.parentElement.parentElement.style.setProperty('display', 'none', 'important'); } } }" },
-                { "wait": 15000 }
+                { "wait": 15000 },
+                { "evaluate": "if(!document.body.innerText.includes('Liquidation') || document.body.innerText.includes('Just a moment') || document.body.innerText.includes('Cloudflare')) throw new Error('CHART_NOT_FOUND');" }
             ]
         };
 
