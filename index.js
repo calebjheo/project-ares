@@ -43,13 +43,13 @@ async function fetchCryptoData() {
             headers: { 'x-cg-demo-api-key': process.env.COINGECKO_API_KEY }
         } : {};
         
-        const priceResponse = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd', cgConfig);
+        const priceResponse = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd', { ...cgConfig, timeout: 15000 });
         const btcPrice = priceResponse.data.bitcoin.usd;
         const ethPrice = priceResponse.data.ethereum.usd;
         const solPrice = priceResponse.data.solana.usd;
 
         // Fetch Fear & Greed Index from alternative.me (CoinGecko doesn't provide this natively)
-        const fgResponse = await axios.get('https://api.alternative.me/fng/');
+        const fgResponse = await axios.get('https://api.alternative.me/fng/', { timeout: 15000 });
         const fearAndGreedIndex = fgResponse.data.data[0].value;
         const fearAndGreedClass = fgResponse.data.data[0].value_classification;
 
@@ -86,7 +86,7 @@ async function fetchCorporateData() {
             }
             const url = encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}`);
             const proxyApi = `https://app.scrapingbee.com/api/v1/?api_key=${process.env.PROXY_API_KEY}&url=${url}`;
-            const response = await axios.get(proxyApi);
+            const response = await axios.get(proxyApi, { timeout: 20000 });
             const price = response.data.chart.result[0].meta.regularMarketPrice;
             const prevClose = response.data.chart.result[0].meta.chartPreviousClose;
             const changePercent = (((price - prevClose) / prevClose) * 100).toFixed(2);
@@ -121,7 +121,7 @@ async function scrapeFarsideETF() {
                 stealth_proxy: 'true',
                 extract_rules: '{"body_text":"body"}'
             },
-            timeout: 120000 
+            timeout: 30000 
         });
         
         // ScrapingBee returns a JSON object when using extract_rules
@@ -183,7 +183,7 @@ async function takeCoinglassScreenshot(ticker) {
             params,
             headers,
             responseType: 'arraybuffer',
-            timeout: 120000 
+            timeout: 35000 
         });
         
         const base64Screenshot = Buffer.from(response.data, 'binary').toString('base64');
@@ -227,7 +227,7 @@ async function takeCoinankScreenshot(ticker) {
         const response = await axios.get('https://app.scrapingbee.com/api/v1/', { 
             params,
             responseType: 'arraybuffer',
-            timeout: 120000 
+            timeout: 45000 
         });
         
         const base64Screenshot = Buffer.from(response.data, 'binary').toString('base64');
@@ -301,7 +301,7 @@ async function sendToGemini(payload, lang = 'EN') {
     let heatmapParts = [];
     [payload.btcScreenshot, payload.ethScreenshot, payload.solScreenshot].forEach(s => {
         if (s && typeof s === 'string' && !s.includes('PROXY ERROR') && !s.includes('PAYWALLED') && !s.includes('AUTH_FAILED')) {
-            heatmapParts.push({ inline_data: { mime_type: "image/png", data: s } });
+            heatmapParts.push({ inlineData: { mimeType: "image/png", data: s } });
         }
     });
 
@@ -378,7 +378,8 @@ Here is the EXACT JSON format you must follow:\n` +
         const response = await axios.post(apiUrl, requestBody, {
             headers: {
                 'Content-Type': 'application/json'
-            }
+            },
+            timeout: 45000
         });
         
         return response.data;
@@ -633,7 +634,8 @@ ${JSON.stringify(englishData, null, 2)}`
     };
 
     const response = await axios.post(apiUrl, requestBody, {
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 30000
     });
 
     let responseText = response.data.candidates[0].content.parts[0].text;
@@ -839,7 +841,8 @@ async function analyzeAltcoinHeatmap(ticker, base64Image) {
 
     try {
         const response = await axios.post(apiUrl, requestBody, {
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json' },
+            timeout: 30000
         });
         
         let responseText = response.data.candidates[0].content.parts[0].text;
