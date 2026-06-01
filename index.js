@@ -210,8 +210,16 @@ async function takeCoinankScreenshot(ticker) {
         return `PROXY ERROR: PROXY_API_KEY is not defined. Cannot capture heatmap.`;
     }
 
-    console.log(`[+] Taking Coinank screenshot for ${ticker} via ScrapingBee API...`);
     try {
+        console.log(`[+] Taking Coinank screenshot for ${ticker} via ScrapingBee API...`);
+        const jsScenario = {
+            instructions: [
+                { "evaluate": "const style = document.createElement('style'); style.innerHTML = '* { filter: none !important; backdrop-filter: none !important; } .ant-modal-root, .ant-modal-mask, .ant-modal-wrap, div[class*=\"modal\"], div[class*=\"dialog\"], div[class*=\"overlay\"] { display: none !important; opacity: 0 !important; visibility: hidden !important; }'; document.head.appendChild(style);" },
+                { "evaluate": "const els = document.querySelectorAll('div, p, span, button'); for (const el of els) { if (el.innerText && (el.innerText.includes('Please log in') || el.innerText.includes('use chart features'))) { el.style.setProperty('display', 'none', 'important'); if (el.parentElement) { el.parentElement.style.setProperty('display', 'none', 'important'); if (el.parentElement.parentElement) el.parentElement.parentElement.style.setProperty('display', 'none', 'important'); } } }" },
+                { "wait": 15000 }
+            ]
+        };
+
         const params = {
             api_key: process.env.PROXY_API_KEY,
             url: `https://coinank.com/chart/derivatives/liq-heat-map/${ticker}USDT/1w`,
@@ -221,7 +229,7 @@ async function takeCoinankScreenshot(ticker) {
             screenshot: 'true',
             window_width: '1920',
             window_height: '1080',
-            wait: '15000'
+            js_scenario: JSON.stringify(jsScenario)
         };
 
         const response = await axios.get('https://app.scrapingbee.com/api/v1/', { 
