@@ -151,7 +151,7 @@ async function takeCoinglassScreenshot(ticker) {
                 { "evaluate": "const style = document.createElement('style'); style.innerHTML = '* { filter: none !important; backdrop-filter: none !important; } div[role=\"dialog\"], .MuiDialog-root, .MuiModal-root { display: none !important; opacity: 0 !important; visibility: hidden !important; }'; document.head.appendChild(style);" },
                 { "wait": 15000 },
                 { "evaluate": "if(window.location.href.includes('login') || document.body.innerText.includes('Sign in')) throw new Error('AUTH_FAILED');" },
-                { "evaluate": "const canvas = document.querySelector('canvas'); if(!canvas || canvas.offsetHeight === 0 || !document.body.innerText.includes('Liquidation') || document.body.innerText.includes('Just a moment') || document.body.innerText.includes('Cloudflare')) throw new Error('CHART_NOT_FOUND');" }
+                { "evaluate": "const canvases = document.querySelectorAll('canvas'); let hasVisible = false; for (const c of canvases) { if (c.offsetHeight > 50) hasVisible = true; } if(!hasVisible || !document.body.innerText.includes('Liquidation') || document.body.innerText.includes('Just a moment') || document.body.innerText.includes('Cloudflare')) throw new Error('CHART_NOT_FOUND');" }
             ]
         };
         
@@ -218,7 +218,7 @@ async function takeCoinankScreenshot(ticker) {
                 { "evaluate": "const style = document.createElement('style'); style.innerHTML = '* { filter: none !important; backdrop-filter: none !important; } .ant-modal-root, .ant-modal-mask, .ant-modal-wrap, div[class*=\"modal\"], div[class*=\"dialog\"], div[class*=\"overlay\"] { display: none !important; opacity: 0 !important; visibility: hidden !important; }'; document.head.appendChild(style);" },
                 { "wait": 15000 },
                 { "evaluate": "const els = document.querySelectorAll('div, p, span, button, section, form'); for (const el of els) { if (el.innerText && (el.innerText.includes('Please log in') || el.innerText.includes('use chart features') || el.innerText.includes('Sign in') || el.innerText.includes('Sign up'))) { el.style.setProperty('display', 'none', 'important'); let parent = el; for (let i = 0; i < 4; i++) { if (parent && parent.parentElement && parent.parentElement.tagName !== 'BODY' && parent.parentElement.id !== 'root') { parent = parent.parentElement; parent.style.setProperty('display', 'none', 'important'); } } } }" },
-                { "evaluate": "const canvas = document.querySelector('canvas'); if(!canvas || canvas.offsetHeight === 0 || !document.body.innerText.includes('Liquidation') || document.body.innerText.includes('Just a moment') || document.body.innerText.includes('Cloudflare')) throw new Error('CHART_NOT_FOUND');" }
+                { "evaluate": "const canvases = document.querySelectorAll('canvas'); let hasVisible = false; for (const c of canvases) { if (c.offsetHeight > 50) hasVisible = true; } if(!hasVisible || !document.body.innerText.includes('Liquidation') || document.body.innerText.includes('Just a moment') || document.body.innerText.includes('Cloudflare')) throw new Error('CHART_NOT_FOUND');" }
             ]
         };
 
