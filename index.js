@@ -308,57 +308,69 @@ async function sendToGemini(payload, lang = 'EN') {
         failureContext = `SOME SCRAPERS FAILED: ${failureContext}. For any jammed metrics, you MUST output "RADAR JAMMED". Do not hallucinate data for jammed metrics.\n`;
     }
     
-    let heatmapParts = [];
-    [payload.btcScreenshot, payload.ethScreenshot, payload.solScreenshot].forEach(s => {
-        if (s && typeof s === 'string' && !s.includes('PROXY ERROR') && !s.includes('PAYWALLED') && !s.includes('AUTH_FAILED')) {
-            heatmapParts.push({ inlineData: { mimeType: "image/png", data: s } });
-        }
-    });
-
     const corpPrompt = payload.corpData ? 
         `COIN: Price $${payload.corpData.COIN.price}, 24h Change: ${payload.corpData.COIN.changePercent}%\nHOOD: Price $${payload.corpData.HOOD.price}, 24h Change: ${payload.corpData.HOOD.changePercent}%` 
         : `[CRITICAL: THE PROXY OR RATE LIMIT BLOCKED CORPORATE DATA. YOU MUST OUTPUT "RADAR JAMMED" FOR Corporate_Sentiment.]`;
 
-        const requestBody = {
-            contents: [
-                {
-                    role: 'user',
-                    parts: [
-                        {
-                            text: `You are a machine API. You must output ONLY valid JSON. The 'Market_Posture' field MUST be exactly one English word (e.g., AGGRESSIVE, NEUTRAL, DEFENSIVE, DANGER). The 'Actionable_Intel' field MUST include specific ETF inflow/outflow numbers and coin tickers. 
+    const parts = [
+        {
+            text: `You are a machine API. You must output ONLY valid JSON. The 'Market_Posture' field MUST be exactly one English word (e.g., AGGRESSIVE, NEUTRAL, DEFENSIVE, DANGER). The 'Actionable_Intel' field MUST include specific ETF inflow/outflow numbers and coin tickers. 
 IMPORTANT: The 'Actionable_Intel' field MUST be written in the ${lang} language.
 
 ${failureContext}
 
 Here is the EXACT JSON format you must follow:\n` +
-                              `{\n` +
-                              `"Market_Posture": "DEFENSIVE",\n` +
-                              `"Fear_Greed_Score": "78",\n` +
-                              `"Corporate_Sentiment": "Coinbase and Robinhood are bleeding down 4%, indicating total retail exhaustion.",\n` +
-                              `"Net_ETF_Flow": "+$285M",\n` +
-                              `"Divergence_Matrix": "OPTIMAL: Smart Money Accumulating. Retail Exhausted.",\n` +
-                              `"Actionable_Intel": "[Translate this intel into ${lang}]: Analyze current liquidity clusters. Summarize ETF flows and retail sentiment.",\n` +
-                              `${btcPrompt},\n` +
-                              `${ethPrompt},\n` +
-                              `${solPrompt}\n` +
-                              `}\n\n` +
-                              `Please analyze the following crypto risk-management data and format your response into the exact JSON structure above. Use the following live anchor prices:\n` +
-                              `BTC Price: $${payload.cryptoData.btcPrice}\n` +
-                              `ETH Price: $${payload.cryptoData.ethPrice}\n` +
-                              `SOL Price: $${payload.cryptoData.solPrice}\n` +
-                              `Fear & Greed Index: ${payload.cryptoData.fearAndGreed.value} (${payload.cryptoData.fearAndGreed.classification})\n` +
-                              `${corpPrompt}\n` +
-                              `Raw Farside ETF Data:\n${payload.etfFlow.rawText}\n\n` +
-                              `CRITICAL DIRECTIVES:\n` +
-                              `1. "Corporate_Sentiment": You MUST analyze the COIN and HOOD stock prices. Output a 2-3 sentence detailed summary. Provide a highly detailed breakdown. YOU MUST TRANSLATE THIS ENTIRE SUMMARY INTO ${lang}. DO NOT OMIT THIS KEY.\n` +
-                              `2. "BTC_Kill_Zone" / "ETH_Kill_Zone" / "SOL_Kill_Zone": Analyze the attached Coinglass liquidation heatmaps. Find the heaviest liquidation clusters STRICTLY BELOW the live anchor prices. Format the values WITH a dollar sign and commas (e.g. "$74,800"). IF THE IMAGE IS A CLOUDFLARE CHALLENGE PAGE OR MISSING, YOU MUST OUTPUT "RADAR JAMMED".\n` +
-                              `3. "Actionable_Intel": Provide a highly detailed 3-4 sentence strategic analysis synthesizing ONLY the institutional ETF flows and Kill Zones. YOU MUST TRANSLATE THIS ENTIRE ANALYSIS INTO ${lang}. DO NOT mention retail sentiment, COIN, or HOOD, as that is covered separately.\n` +
-                              `4. "Divergence_Matrix": Compare the ETF Flows and Corporate Sentiment. If ETF Flows are Negative AND Retail Stocks are Positive -> Output: "DANGER: Smart Money Distributing to Retail. Leverage Trap Imminent.". If ETF Flows are Positive AND Retail Stocks are Negative -> Output: "OPTIMAL: Smart Money Accumulating. Retail Exhausted.". Otherwise -> Output: "NEUTRAL: Macro Indecision. Trade Level to Level." You MUST translate the output into ${lang}.`
-                        },
-                        ...heatmapParts
-                    ]
-                }
-            ],
+                  `{\n` +
+                  `"Market_Posture": "DEFENSIVE",\n` +
+                  `"Fear_Greed_Score": "78",\n` +
+                  `"Corporate_Sentiment": "Coinbase and Robinhood are bleeding down 4%, indicating total retail exhaustion.",\n` +
+                  `"Net_ETF_Flow": "+$285M",\n` +
+                  `"Divergence_Matrix": "OPTIMAL: Smart Money Accumulating. Retail Exhausted.",\n` +
+                  `"Actionable_Intel": "[Translate this intel into ${lang}]: Analyze current liquidity clusters. Summarize ETF flows and retail sentiment.",\n` +
+                  `${btcPrompt},\n` +
+                  `${ethPrompt},\n` +
+                  `${solPrompt}\n` +
+                  `}\n\n` +
+                  `Please analyze the following crypto risk-management data and format your response into the exact JSON structure above. Use the following live anchor prices:\n` +
+                  `BTC Price: $${payload.cryptoData.btcPrice}\n` +
+                  `ETH Price: $${payload.cryptoData.ethPrice}\n` +
+                  `SOL Price: $${payload.cryptoData.solPrice}\n` +
+                  `Fear & Greed Index: ${payload.cryptoData.fearAndGreed.value} (${payload.cryptoData.fearAndGreed.classification})\n` +
+                  `${corpPrompt}\n` +
+                  `Raw Farside ETF Data:\n${payload.etfFlow.rawText}\n\n` +
+                  `CRITICAL DIRECTIVES:\n` +
+                  `1. "Corporate_Sentiment": You MUST analyze the COIN and HOOD stock prices. Output a 2-3 sentence detailed summary. Provide a highly detailed breakdown. YOU MUST TRANSLATE THIS ENTIRE SUMMARY INTO ${lang}. DO NOT OMIT THIS KEY.\n` +
+                  `2. "BTC_Kill_Zone" / "ETH_Kill_Zone" / "SOL_Kill_Zone": Analyze the attached Coinglass liquidation heatmaps. Find the heaviest liquidation clusters STRICTLY BELOW the live anchor prices. Format the values WITH a dollar sign and commas (e.g. "$74,800"). IF THE IMAGE IS A CLOUDFLARE CHALLENGE PAGE OR MISSING, YOU MUST OUTPUT "RADAR JAMMED".\n` +
+                  `3. "Actionable_Intel": Provide a highly detailed 3-4 sentence strategic analysis synthesizing ONLY the institutional ETF flows and Kill Zones. YOU MUST TRANSLATE THIS ENTIRE ANALYSIS INTO ${lang}. DO NOT mention retail sentiment, COIN, or HOOD, as that is covered separately.\n` +
+                  `4. "Divergence_Matrix": Compare the ETF Flows and Corporate Sentiment. If ETF Flows are Negative AND Retail Stocks are Positive -> Output: "DANGER: Smart Money Distributing to Retail. Leverage Trap Imminent.". If ETF Flows are Positive AND Retail Stocks are Negative -> Output: "OPTIMAL: Smart Money Accumulating. Retail Exhausted.". Otherwise -> Output: "NEUTRAL: Macro Indecision. Trade Level to Level." You MUST translate the output into ${lang}.`
+        }
+    ];
+
+    if (payload.btcScreenshot && typeof payload.btcScreenshot === 'string' && !payload.btcScreenshot.includes('PROXY ERROR') && !payload.btcScreenshot.includes('PAYWALLED') && !payload.btcScreenshot.includes('AUTH_FAILED')) {
+        const mimeType = payload.btcScreenshot.startsWith('iVBORw') ? 'image/png' : 'image/jpeg';
+        parts.push({ text: "\n--- BTC Liquidation Heatmap Screenshot ---" });
+        parts.push({ inlineData: { mimeType, data: payload.btcScreenshot } });
+    }
+    
+    if (payload.ethScreenshot && typeof payload.ethScreenshot === 'string' && !payload.ethScreenshot.includes('PROXY ERROR') && !payload.ethScreenshot.includes('PAYWALLED') && !payload.ethScreenshot.includes('AUTH_FAILED')) {
+        const mimeType = payload.ethScreenshot.startsWith('iVBORw') ? 'image/png' : 'image/jpeg';
+        parts.push({ text: "\n--- ETH Liquidation Heatmap Screenshot ---" });
+        parts.push({ inlineData: { mimeType, data: payload.ethScreenshot } });
+    }
+
+    if (payload.solScreenshot && typeof payload.solScreenshot === 'string' && !payload.solScreenshot.includes('PROXY ERROR') && !payload.solScreenshot.includes('PAYWALLED') && !payload.solScreenshot.includes('AUTH_FAILED')) {
+        const mimeType = payload.solScreenshot.startsWith('iVBORw') ? 'image/png' : 'image/jpeg';
+        parts.push({ text: "\n--- SOL Liquidation Heatmap Screenshot ---" });
+        parts.push({ inlineData: { mimeType, data: payload.solScreenshot } });
+    }
+
+    const requestBody = {
+        contents: [
+            {
+                role: 'user',
+                parts: parts
+            }
+        ],
             generationConfig: {
                 temperature: 0.2,
                 responseMimeType: "application/json",
