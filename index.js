@@ -1010,13 +1010,27 @@ app.get('/api/test-scrape', async (req, res) => {
         if (req.query.country_code) {
             params.country_code = req.query.country_code;
         }
+        if (req.query.js_scenario) {
+            params.js_scenario = req.query.js_scenario;
+        }
         const response = await axios.get('https://app.scrapingbee.com/api/v1/', { 
             params: params,
             responseType: 'arraybuffer'
         });
+        
+        // If they request format=image, send the image directly
+        if (req.query.format === 'image') {
+            res.setHeader('Content-Type', 'image/png');
+            return res.send(response.data);
+        }
+        
         res.json({ success: true, status: response.status, screenshotLength: response.data.length });
     } catch (error) {
-        res.json({ success: false, error: error.message, status: error.response?.status, dataLength: error.response?.data?.length });
+        let details = error.message;
+        if (error.response && error.response.data) {
+             details += " | ScrapingBee Data: " + Buffer.from(error.response.data).toString('utf-8');
+        }
+        res.json({ success: false, error: details, status: error.response?.status });
     }
 });
 
